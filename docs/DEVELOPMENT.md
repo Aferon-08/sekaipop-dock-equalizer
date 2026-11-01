@@ -2,13 +2,17 @@
 
 [← README](../README.md)
 
+## Ветка v3
+
+См. [NATIVE-INTEGRATION.md](NATIVE-INTEGRATION.md). Прежние установочные адаптеры удалены из плагина. Их функциональность перенесена в предложенные штатные хосты оболочки; install.py — только сообщение, без изменений файлов.
+
 ## Структура
 
 | Файлы | Роль |
 |---|---|
 | `plugin.json`, `Widget.qml`, `Service.qml` | Манифест API 1, вспомогательный виджет и общий аудио/ритм/тайминг-сервис. |
 | `SettingsPanel.qml`, `SettingsControl.qml`, `settings_adapter.py` | Стеклянная панель, управление параметрами и два подключения к телефону. |
-| `install.py`, `*-adapter.qml`, `*_adapter.py` | Проверяемые обратимые подключения в оболочку, резервирование и откат. |
+| `Dock.qml`, `Wallpaper.qml`, `Settings.qml`, `integration/` | Штатные точки входа и отдельно рассматриваемый патч API оболочки. |
 | `DockWings.qml`, `DockLyrics.qml`, `VisualizerCapsule.qml` | Жидкая форма дока, компоновка плеера и спектр. |
 | `Lyrics*`, `KaraokeLine.qml`, `Marker*`, `Firefly*`, `MultiVoice*`, `Backing*` | Текст, точки, огоньки, голоса и финальные состояния. |
 | `WordtimeStore.qml`, `WordtimeDialog.qml`, `wordtime*.py` | Очередь, интерфейс и адаптер таймингов. |

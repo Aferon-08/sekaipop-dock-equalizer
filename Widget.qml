@@ -1,6 +1,6 @@
 import QtQuick
 
-// Optional desktop information card; the dock adapter works without placing it.
+// Optional desktop information card; native dock works without placing it.
 Item {
     id: root
     required property var host
@@ -12,7 +12,7 @@ Item {
         y: 16
         width: parent.width - 32
         wrapMode: Text.WordWrap
-        text: "Dock Equalizer\n\nКапсулы появляются по краям дока при воспроизведении музыки. Настройки: Рабочий стол → Плагины → Dock Equalizer."
+        text: "Dock Equalizer — native extensions\n\nКапсулы появляются по краям дока при воспроизведении музыки. Настройки: Рабочий стол → Плагины → Dock Equalizer."
             + (root.host.service && root.host.service.error ? "\n\n" + root.host.service.error : "")
         color: root.host.theme.pInk
         font.family: root.host.theme.fontFamily

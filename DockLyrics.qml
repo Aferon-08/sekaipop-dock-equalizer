@@ -689,8 +689,9 @@ Item {
         theme: root.host.theme
         lines: root.lines
         duration: root.duration
-        time: root.lyricTime
-        playing: root.playing
+        rendering: root.available && !root.multiVoiceActive && !root.lyricsEnded
+        time: rendering ? root.lyricTime : 0
+        playing: rendering && root.playing
         pixelSize: (root.host.settings.lyricFontSize ?? 17) - 1 + Math.min(1, root.layout)
         ink: root.colors.ink
         accent: root.colors.accent
@@ -700,7 +701,7 @@ Item {
     BackingLayer {
         id: singleBacking
         x:reel.x;y:reel.y;width:reel.width;height:reel.height
-        lines:root.allLines.filter(l=>l.role==="backing");time:root.lyricTime
+        lines:root.allLines.filter(l=>l.role==="backing");time:visible?root.lyricTime:0
         opacity:root.available && !root.multiVoiceActive && !root.lyricsEnded ? root.lyricsOpacity : 0
         visible:opacity>.001
         fontFamily:root.host.theme.fontFamily;pixelSize:12

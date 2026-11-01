@@ -1,0 +1,682 @@
+diff --git a/docs/PLUGINS.md b/docs/PLUGINS.md
+index 2aaf62b..57922a1 100644
+--- a/docs/PLUGINS.md
++++ b/docs/PLUGINS.md
+@@ -433,3 +433,16 @@ node sekaipop/tests/plugin-test/form_unit.js          # what Settings shows: the
+ sh sekaipop/tests/plugin-test/plugin_state_test.sh     # the state script, against a throwaway folder
+ node sekaipop/tests/preset-widgets-test/registry_unit.js
+ ```
++
++
++## Proposed native extension surfaces (additive API 1)
++
++`extensions: ["dock", "wallpaper", "settings"]` declares optional surfaces, implemented by fixed entry files `Dock.qml`, `Wallpaper.qml`, `Settings.qml`. The manager only clones/links the repository. No install hooks run. One dock/wallpaper provider is selected deterministically by plugin id; conflicting providers must not be installed together in this initial proposal.
++
++The service host advertises `capabilities`: `native-dock-v1`, `native-wallpaper-v1`, `native-settings-v1`, `transient-palette-v1`. Services may implement `extensionEnabled(slot)` to switch off a surface without changing shell files.
++
++Dock host: base widget settings/service/theme plus the live dock item, geometry, media source, lyrics, hover/edit/desktop-empty state and monitor palette. Dock entry outputs `fits`, `ownsHousing`, `widthExtra`, `heightExtra`, `headerHeight`, `iconsOffset`, `iconsOpacity`, `iconsScale`, `suppressMediaKey`. Wallpaper host: theme/settings/service, screenName, configured widget rectangles, barEdge/barExtent, working and setSetting. Settings host: state/theme, opened, close(), screenName, native phone capture item/rect and viewport rect. Settings entry exposes `showing` while its exit animation completes.
++
++Theme IPC exposes renewable palette leases (`musicSet`, `musicClear`, `musicStatus`) with baseline restoration and expiry. Persistent theme settings are not the music override. Existing desktop/bar plugins are unchanged.
++
++This section documents a proposal; upstream review and version assignment are required before advertising support in the reviewed catalogue.
+diff --git a/sekaipop/modules/common/functions/PluginManifest.js b/sekaipop/modules/common/functions/PluginManifest.js
+index 94888ba..5ffae4d 100644
+--- a/sekaipop/modules/common/functions/PluginManifest.js
++++ b/sekaipop/modules/common/functions/PluginManifest.js
+@@ -86,6 +86,10 @@ function parse(text, folder, fileList) {
+         return bad(m.api > API_VERSION ? "api-new" : "api-old", "written for plugin api " + m.api + ", this shell speaks " + SUPPORTED.join(", ")
+             + (m.api > API_VERSION ? " (update SekaiPop)" : " (update the plugin)"))
+ 
++    var extensions = m.extensions === undefined ? [] : m.extensions
++    if (!Array.isArray(extensions) || extensions.some(x => ["dock","wallpaper","settings"].indexOf(x)<0))
++        return bad("field", "extensions must contain dock, wallpaper or settings", "extensions")
++    extensions = extensions.filter((x,i,a)=>a.indexOf(x)===i)
+     var settings = {}
+     if (m.settings !== undefined) {
+         if (!isObj(m.settings))
+@@ -156,6 +160,7 @@ function parse(text, folder, fileList) {
+             settingsInfo: readSettingsInfo(m.settingsInfo, settings),
+             groups: readGroups(m.groups),
+             bar: bar,
++            extensions: extensions,
+             files: files
+         }
+     }
+diff --git a/sekaipop/modules/sekai/background/WallpaperLayer.qml b/sekaipop/modules/sekai/background/WallpaperLayer.qml
+index c1e5c06..fa4a47c 100644
+--- a/sekaipop/modules/sekai/background/WallpaperLayer.qml
++++ b/sekaipop/modules/sekai/background/WallpaperLayer.qml
+@@ -46,7 +46,15 @@ PanelWindow {
+     // This monitor's theme: Theme.of() gives the shell's own unless the monitor has one.
+     readonly property var mt: Theme.of(screen)
+ 
+-readonly property bool wallpaperEnabled:SettingsService.flag("wallpaper.enabled")
++    // BEGIN native plugin wallpaper properties v1
++    property bool proceduralFailed: false
++    readonly property var proceduralState: PluginService.extensionState("wallpaper")
++    readonly property bool proceduralPending: !PluginService.scanned || (!!proceduralState && !proceduralState.loaded)
++    readonly property bool proceduralDesired: !!proceduralState && proceduralState.loaded
++        && PluginService.extensionEnabled(proceduralState,"wallpaper") && !proceduralFailed
++
++    // END native plugin wallpaper properties v1
++readonly property bool wallpaperEnabled:SettingsService.flag("wallpaper.enabled") && !win.proceduralDesired && !win.proceduralPending
+ onWallpaperEnabledChanged: {
+     if (wallpaperEnabled)
+         restoreWallpaperResources();
+@@ -61,7 +69,7 @@ onWallpaperEnabledChanged: {
+     WlrLayershell.namespace: "sekaipop-wallpaper"
+     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+     exclusionMode: ExclusionMode.Ignore
+-    color: "transparent" // shown before the first image finishes decoding
++    color: (win.proceduralPending || win.proceduralDesired) ? "black" : "transparent" // shown before the first image finishes decoding
+ 
+     anchors {
+         top: true
+@@ -519,7 +527,7 @@ onWallpaperEnabledChanged: {
+     // EditStage.qml), and the ring in EditFrame hides its square corners.
+     Item {
+         id: stage
+-        visible: win.wallpaperEnabled
++        visible: win.wallpaperEnabled || win.proceduralDesired || win.proceduralPending
+         width: parent.width
+         height: parent.height
+         x: EditMode.xFor(win.screenName, win.width, win.height, win.uiScale)
+@@ -534,6 +542,7 @@ onWallpaperEnabledChanged: {
+         // (Without parallax it is exactly the stage.)
+         Item {
+             id: pic
++            visible: win.wallpaperEnabled
+             width: stage.width * win.parallaxZoom
+             height: stage.height * win.parallaxZoom
+             x: -(width - stage.width) * win.parallaxFraction
+@@ -745,6 +754,79 @@ onWallpaperEnabledChanged: {
+             vertexShader: Directories.shader(blend.shaderBase + ".vert.qsb")
+         }
+         } // pic
++        // BEGIN native plugin wallpaper loader v1
++        Rectangle {
++            anchors.fill: parent
++            color: "black"
++            visible: win.proceduralPending || win.proceduralDesired
++        }
++        Loader {
++            id: proceduralWallpaper
++            anchors.fill: parent
++            active: win.proceduralDesired && !!win.proceduralState.service && widgetSnapshotReady
++            property bool widgetSnapshotReady:false
++            property int widgetScans:0
++            property var widgetAreas:[]
++            property string pendingWidgetAreas:""
++            // Configured placement, independent of FocusGate/lock/Game Mode
++            // destroying or hiding the widget's window.
++            function widgetConfigured(id,screen){
++                // The stock audio visualizer can overlap the wallpaper art.
++                if(id==="visualizer")return false
++                if(!EditMode.widgetShown(id))return false
++                if(EditMode.cloneable(id))return EditMode.homeOf(id)===screen || WidgetClones.has(id,screen)
++                if(id==="todo" || id==="notes")return DesktopMonitors.homeFor(id)===screen
++                if(id.indexOf("image:")===0){const r=ImageService.rec(id.slice(6));return !!r && EditMode.homeScreen(r.screen)===screen}
++                if(PluginService.isPluginId(id)){const st=PluginService.stateFor(id);return !!st && EditMode.homeScreen(st.screenName)===screen}
++                return false
++            }
++            function collectWidgets(){
++                if(EditMode.active)return
++                const areas=[]
++                const rects=PluginService.widgetRects
++                for(const key of Object.keys(rects).sort()){
++                    const r=rects[key]
++                    if(r.screen!==win.screenName)continue
++                    const id=key.slice(0,key.lastIndexOf("@"))
++                    if(!widgetConfigured(id,r.screen))continue
++                    areas.push({x:Math.floor(r.x/4)*4,y:Math.floor(r.y/4)*4,width:Math.ceil(r.width/4)*4+4,height:Math.ceil(r.height/4)*4+4})
++                }
++                const signature=JSON.stringify(areas)
++                // Wait for placement/size to settle, including widgets recreated
++                // after focus changes. Dragging in Edit Desktop is ignored above.
++                if(signature===pendingWidgetAreas && signature!==JSON.stringify(widgetAreas))widgetAreas=areas
++                const settled=signature===pendingWidgetAreas
++                pendingWidgetAreas=signature
++                widgetScans++
++                if(widgetScans>=2 && settled)widgetSnapshotReady=true
++            }
++            Timer {interval:650;running:true;onTriggered:proceduralWallpaper.collectWidgets()}
++            Timer {interval:1200;running:win.proceduralDesired;repeat:true;onTriggered:proceduralWallpaper.collectWidgets()}
++            readonly property string petClaimKey: "wallpaper:" + win.screenName
++            readonly property bool petWorking: active && !!item && LockState.phase === "idle" && !win.fullscreenCovered && !GameModeService.enabled
++            onPetWorkingChanged: syncPetClaim()
++            function syncPetClaim() { if(win.proceduralState) win.proceduralState.want(petClaimKey,petWorking) }
++            Component.onDestruction: if(win.proceduralState) win.proceduralState.want(petClaimKey,false)
++            onStatusChanged: if(status === Loader.Error) win.proceduralFailed = true
++            onActiveChanged: if(active && String(source) === "") loadScene()
++            function loadScene() {
++                setSource("file://" + win.proceduralState.dir + "/Wallpaper.qml", {host:wallpaperHost})
++            }
++            QtObject {
++                id:wallpaperHost
++                readonly property var theme:win.mt
++                readonly property var settings:win.proceduralState.settings
++                readonly property var service:win.proceduralState.service
++                readonly property string screenName:win.screenName
++                readonly property var widgetAreas:proceduralWallpaper.widgetAreas
++                readonly property string barEdge:BarPositionService.position
++                readonly property real barExtent:Math.round((BarStyleService.index===3 ? (BarPositionService.vertical?win.mt.capStripV:win.mt.capStrip) : BarPositionService.thickness)*win.uiScale)
++                readonly property bool working:LockState.phase === "idle" && !win.fullscreenCovered && !GameModeService.enabled
++                function setSetting(key,value){return win.proceduralState.setSetting(key,value)}
++            }
++            Component.onCompleted: { if(active && String(source) === "") loadScene();syncPetClaim() }
++        }
++        // END native plugin wallpaper loader v1
+     }
+ 
+     // Over the picture: the card's frame.
+diff --git a/sekaipop/modules/sekai/dock/Dock.qml b/sekaipop/modules/sekai/dock/Dock.qml
+index c20ce18..57a8b9b 100644
+--- a/sekaipop/modules/sekai/dock/Dock.qml
++++ b/sekaipop/modules/sekai/dock/Dock.qml
+@@ -493,7 +493,7 @@ PanelWindow {
+         if (out.length > 0)
+             out.push({ kind: "divider", key: "div2" })
+         out.push({ kind: "pin", key: "pin" })
+-        if (dockWindow.mediaShown) {
++        if (dockWindow.mediaShown && !(pluginDockAdapter.item && pluginDockAdapter.item.suppressMediaKey)) {
+             out.push({ kind: "divider", key: "div3" })
+             out.push({ kind: "media", key: "media" })
+         }
+@@ -1576,7 +1576,7 @@ PanelWindow {
+     // How thick the pill is across (design pixels): the key, its padding and, on a
+     // flat dock, its hard shadow underneath.
+     readonly property real pillThickness: dockWindow.iconSize + dockWindow.pillPaddingV * 2
+-                                          + (dockWindow.vertical ? 0 : mt.shadowOffset)
++                                          + (dockWindow.vertical ? 0 : mt.shadowOffset) + (pluginDockAdapter.item ? pluginDockAdapter.item.heightExtra : 0)
+     // ...and as the window sees it (real pixels): how far the strip reaches in from the edge.
+     readonly property real stripSize: Math.round(dockWindow.pillThickness * dockWindow.uiScale)
+     // The window is as big as the screen from the edge the pill is `lift` away from,
+@@ -1783,6 +1783,120 @@ PanelWindow {
+             anchors.fill: parent
+             factor: dockWindow.uiScale
+ 
++            // BEGIN native plugin dock v1
++            Loader {
++                id: pluginDockAdapter
++                anchors.fill: parent
++                readonly property var st: PluginService.extensionState("dock")
++                active: !!st && st.loaded
++                readonly property bool working: active && dockWindow.visible
++                    && !dockWindow.tucked && !LockState.desktopAsleep
++                    && !GameModeService.enabled && PluginService.extensionEnabled(st,"dock")
++                    && !!item && item.fits
++                readonly property string claimKey: "dock:" + (dockWindow.screen ? dockWindow.screen.name : "")
++                property var claimedState: null
++                readonly property string lyricsSignature: media.player
++                    ? [media.title, media.artist, media.player.trackAlbum, media.player.lengthSupported ? media.player.length : 0,
++                       String((media.player.metadata || {})["xesam:url"] || "")].join("\u241f") : ""
++                onLyricsSignatureChanged: lyricsRequest.restart()
++                Timer {
++                    id: lyricsRequest
++                    interval: 500
++                    onTriggered: {
++                        if (!pluginDockAdapter.st || !PluginService.extensionEnabled(pluginDockAdapter.st,"dock")
++                            || pluginDockAdapter.st.settings.lyrics === false || !media.player) return
++                        const p = media.player
++                        LyricsService.request(media.artist, media.title, p.trackAlbum || "",
++                            p.lengthSupported ? p.length : 0, String((p.metadata || {})["xesam:url"] || ""))
++                    }
++                }
++
++                function syncClaim() {
++                    if (claimedState && claimedState !== st)
++                        claimedState.want(claimKey, false)
++                    claimedState = st
++                    if (st)
++                        st.want(claimKey, working)
++                }
++                onWorkingChanged: {
++                    syncClaim()
++                    if (working) lyricsRequest.restart()
++                }
++                onStChanged: syncClaim()
++                onActiveChanged: {
++                    if (active)
++                        setSource("file://" + st.dir + "/Dock.qml", { host: pluginDockHost })
++                }
++                Component.onCompleted: {
++                    if (active)
++                        setSource("file://" + st.dir + "/Dock.qml", { host: pluginDockHost })
++                    syncClaim()
++                    lyricsRequest.restart()
++                }
++                Component.onDestruction: {
++                    if (claimedState)
++                        claimedState.want(claimKey, false)
++                }
++
++                QtObject {
++                    id: pluginDockHost
++                    readonly property var theme: dockWindow.mt
++                    readonly property var settings: pluginDockAdapter.st ? pluginDockAdapter.st.settings : ({})
++                    readonly property var service: pluginDockAdapter.st ? pluginDockAdapter.st.service : null
++                    readonly property bool working: pluginDockAdapter.working
++                    function reportSurface(state) {
++                        const service = pluginDockAdapter.st ? pluginDockAdapter.st.service : null
++                        if (service && typeof service.setSurface === "function")
++                            service.setSurface(dockWindow.screen ? dockWindow.screen.name : "", state)
++                    }
++                    readonly property QtObject dock: QtObject {
++                        readonly property var item: dockPill
++                        readonly property bool vertical: dockWindow.vertical
++                        readonly property bool capsule: dockWindow.look === "capsule"
++                        readonly property string look: dockWindow.look
++                        readonly property real radius: dockPill.cornerRadius
++                        readonly property real shadow: dockPill.shadowDy
++                        readonly property bool asleep: LockState.desktopAsleep
++                        readonly property var mediaSource: media
++                        readonly property string screenName: dockWindow.screen ? dockWindow.screen.name : ""
++                        readonly property var lyrics: LyricsService
++                        readonly property bool hovered: dockWindow.hovered || dockWindow.dragOver
++                            || dockWindow.menuOpen || dockWindow.folderOpen || dockWindow.toolOpen !== ""
++                        readonly property bool editing: dockWindow.editing
++                        readonly property real baseWidth: dockWindow.rowLen + dockWindow.magData.total + dockWindow.pillPaddingH * 2
++                        readonly property real baseCapHeight: dockWindow.iconSize + dockWindow.pillPaddingV * 2
++                        readonly property real stageWidth: pluginDockAdapter.width
++                        readonly property bool desktopEmpty: {
++                            const name = dockWindow.screen ? dockWindow.screen.name : ""
++                            const monitor = Hyprland.monitors.values.find(m => m.name === name)
++                            if (!monitor || !monitor.activeWorkspace) return false
++                            const activeName = String(monitor.activeWorkspace.name || "")
++                            const specialName = String(monitor.lastIpcObject?.specialWorkspace?.name || "")
++                            return !Hyprland.toplevels.values.some(t => {
++                                const info = t.lastIpcObject || {}
++                                if (info.mapped === false || info.hidden === true || DockService.isMinimized(t)) return false
++                                const ws = t.workspace
++                                const wsName = String(info.workspace?.name || ws?.name || "")
++                                return (activeName !== "" && wsName === activeName)
++                                    || (specialName !== "" && wsName === specialName)
++                                    || (info.pinned === true && (ws?.monitor?.name === name || info.monitor === monitor.id))
++                            })
++                        }
++                        readonly property var palette: ({
++                            fill: capsule ? dockWindow.mt.capBody : dockWindow.mt.surface,
++                            rim: capsule ? dockWindow.mt.capRim : dockWindow.mt.line,
++                            border: capsule ? dockWindow.mt.capRimWidth : dockWindow.mt.borderWidth,
++                            ringWidth: capsule ? dockWindow.mt.capRimWidth : dockWindow.mt.borderWidth + dockWindow.mt.outerRingWidth,
++                            ring: capsule ? dockWindow.mt.capBody : dockWindow.mt.surfaceRing,
++                            shadow: capsule ? dockWindow.mt.capShade : dockWindow.mt.lineShadow,
++                            ink: dockWindow.mt.ink,
++                            accent: capsule ? dockWindow.mt.capLit : dockWindow.mt.accentCyan
++                        })
++                    }
++                }
++            }
++            // END native plugin dock v1
++
+             Pill {
+                 id: dockPill
+                 // On the dock's edge, centered along it.
+@@ -1802,9 +1916,9 @@ PanelWindow {
+                 // Flat: as wide as its keys (and what the magnification adds), one
+                 // key tall. Standing: one key wide, as tall as its keys.
+                 width: dockWindow.vertical ? dockWindow.iconSize + dockWindow.pillPaddingV * 2
+-                                           : dockWindow.rowLen + dockWindow.magData.total + dockWindow.pillPaddingH * 2
++                                           : dockWindow.rowLen + dockWindow.magData.total + dockWindow.pillPaddingH * 2 + (pluginDockAdapter.item ? pluginDockAdapter.item.widthExtra : 0)
+                 height: dockWindow.vertical ? dockWindow.rowLen + dockWindow.magData.total + dockWindow.pillPaddingH * 2 + shadowDy
+-                                            : dockWindow.iconSize + dockWindow.pillPaddingV * 2 + shadowDy
++                                            : dockWindow.iconSize + dockWindow.pillPaddingV * 2 + shadowDy + (pluginDockAdapter.item ? pluginDockAdapter.item.heightExtra : 0)
+ 
+                 // A modest rounded rectangle, not a full capsule — same radius
+                 // MediaPill/BatteryPopup/ResourcePopup/TrayMenu all use for their
+@@ -1820,7 +1934,7 @@ PanelWindow {
+                 cornerRadius: dockWindow.look === "capsule"
+                     ? Math.min(dockPill.capWidth, dockPill.capHeight) / 2 : mt.radiusOuter
+                 // Transparent: no background, only the keys.
+-                bare: dockWindow.look === "transparent"
++                bare: dockWindow.look === "transparent" || (!!pluginDockAdapter.item && pluginDockAdapter.item.ownsHousing)
+                 capRim: dockWindow.look === "capsule"
+                 borderWidth: dockWindow.look === "capsule" ? mt.capRimWidth : mt.borderWidth
+                 // Same navy-outline / pale-ring / white-fill construction as the
+@@ -1840,6 +1954,9 @@ PanelWindow {
+                 Item {
+                     id: dockRow
+                     anchors.centerIn: parent
++                    anchors.verticalCenterOffset: (pluginDockAdapter.item ? pluginDockAdapter.item.iconsOffset : 0) / 2
++                    opacity: pluginDockAdapter.item ? pluginDockAdapter.item.iconsOpacity : 1
++                    scale: pluginDockAdapter.item ? pluginDockAdapter.item.iconsScale : 1
+                     width: dockWindow.vertical ? dockWindow.iconSize : dockWindow.rowLen
+                     height: dockWindow.vertical ? dockWindow.rowLen : dockWindow.iconSize + mt.shadowOffset
+ 
+@@ -1859,9 +1976,9 @@ PanelWindow {
+             MouseArea {
+                 id: hit
+                 x: dockWindow.hitX
+-                y: dockWindow.hitY
++                y: dockWindow.hitY + (pluginDockAdapter.item ? pluginDockAdapter.item.headerHeight : 0)
+                 width: dockWindow.hitW
+-                height: dockWindow.hitH
++                height: Math.max(1, dockWindow.hitH - (pluginDockAdapter.item ? pluginDockAdapter.item.headerHeight : 0))
+                 enabled: !dockWindow.editing && !dockWindow.tucked
+                 hoverEnabled: true
+                 acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+diff --git a/sekaipop/modules/sekai/editMode/EditChrome.qml b/sekaipop/modules/sekai/editMode/EditChrome.qml
+index 2369d55..6e16fad 100644
+--- a/sekaipop/modules/sekai/editMode/EditChrome.qml
++++ b/sekaipop/modules/sekai/editMode/EditChrome.qml
+@@ -59,6 +59,24 @@ import "../../common/functions/PluginForm.js" as PF
+ //   outline flares
+ Item {
+     id: root
++    // BEGIN native plugin widget registry v1
++    function reportWallpaperRect(remove) {
++        const key = root.gridId
++        if(!key)return
++        const t = root.target, w = QsWindow.window
++        // FocusGate can unload the entire widget. Its last layout rectangle
++        // survives that lifecycle; the wallpaper filters real removals by settings.
++        if(remove || !t || !w || t.width<=0 || t.height<=0)return
++        if(w.placed !== undefined && !w.placed)return
++        const k = w && w.uiScale !== undefined ? w.uiScale : 1
++        PluginService.reportWidgetRect(key, {screen:root.screenName,x:t.x*k,y:t.y*k,width:t.width*k,height:t.height*k})
++    }
++    Timer {
++        interval:800;repeat:true;running:true
++        onTriggered:root.reportWallpaperRect(false)
++        Component.onDestruction:root.reportWallpaperRect(true)
++    }
++    // END native plugin widget registry v1
+ 
+     // This monitor's theme: Theme.of() gives the shell's own unless the monitor has one.
+     readonly property var mt: Theme.of(QsWindow.window)
+@@ -132,6 +150,7 @@ Item {
+     readonly property string gridId: root.widgetId === "" ? "" : root.widgetId + "@" + root.screenName
+ 
+     function report() {
++        root.reportWallpaperRect(false)
+         const t = root.target
+         if (!t)
+             return
+diff --git a/sekaipop/modules/sekai/quickPanel/QuickPanel.qml b/sekaipop/modules/sekai/quickPanel/QuickPanel.qml
+index 3790611..4bcc776 100644
+--- a/sekaipop/modules/sekai/quickPanel/QuickPanel.qml
++++ b/sekaipop/modules/sekai/quickPanel/QuickPanel.qml
+@@ -2543,10 +2543,10 @@ Scope {
+             // turning in until it has gone).
+             Item {
+                 id: setHit
+-                x: win.setMidX - sstage.phone.screenCenterX * win.sFit
+-                y: win.setMidY - sstage.phone.screenCenterY * win.sFit
+-                width: root.settingsOpen ? sstage.phone.implicitWidth * win.sFit : 0
+-                height: root.settingsOpen ? sstage.phone.implicitHeight * win.sFit : 0
++                x: liquidPluginSettings.showing ? 0 : win.setMidX - sstage.phone.screenCenterX * win.sFit
++                y: liquidPluginSettings.showing ? 0 : win.setMidY - sstage.phone.screenCenterY * win.sFit
++                width: liquidPluginSettings.showing ? stage.width : (root.settingsOpen ? sstage.phone.implicitWidth * win.sFit : 0)
++                height: liquidPluginSettings.showing ? stage.height : (root.settingsOpen ? sstage.phone.implicitHeight * win.sFit : 0)
+             }
+ 
+             // The part of the phone that shows at rest. The window ends
+@@ -3079,6 +3079,35 @@ Scope {
+             // The Settings phone: the other half of the turn (SettingsStage.qml).
+             // It stands in the middle of the monitor, and during the turn follows
+             // the same path as the Quick Panel's phone, rolled the opposite way.
++            // BEGIN native plugin liquid settings
++            Loader {
++                id: liquidPluginSettings
++                anchors.fill: parent
++                z: 500
++                readonly property var st: PluginService.stateFor(PluginService.settingsExtensionId)
++                active: !!st && st.loaded && root.settingsShown
++                readonly property bool showing: !!item && item.showing
++                function loadPanel(){if(active)setSource("file://"+st.dir+"/Settings.qml",{host:extensionSettingsHost})}
++                onActiveChanged: {if(active)loadPanel();else PluginService.settingsExtensionOpen=false}
++                QtObject {
++                    id:extensionSettingsHost
++                    readonly property var state:liquidPluginSettings.st
++                    readonly property var theme:sstage.mt
++                    readonly property var phone:settingsPhoneCapture
++                    readonly property string screenName:root.targetScreen ? root.targetScreen.name : ""
++                    readonly property rect phoneRect:Qt.rect(win.setMidX-sstage.halfW*win.sFit,win.setMidY-sstage.halfH*win.sFit,2*sstage.halfW*win.sFit,2*sstage.halfH*win.sFit)
++                    readonly property rect backgroundRect:Qt.rect((win.monitorW-win.implicitWidth)/2,win.monitorH+Math.ceil(win.bleed)-win.implicitHeight,win.monitorW,win.monitorH)
++                    readonly property bool opened:PluginService.settingsExtensionOpen
++                    function close(){PluginService.settingsExtensionOpen=false}
++                }
++                Component.onCompleted:loadPanel()
++            }
++            // END native plugin liquid settings
++            // BEGIN native plugin phone capture
++            Item {
++                id: settingsPhoneCapture
++                anchors.fill: parent
++                readonly property bool captureReady: sstage.settled && !sstage.moving
+             SettingsStage {
+                 id: sstage
+ 
+@@ -3143,6 +3172,7 @@ Scope {
+                     keybindsDelay.restart()
+                 }
+             }
++            } // END native plugin phone capture
+         }
+     }
+ }
+diff --git a/sekaipop/modules/sekai/settings/PluginEditor.qml b/sekaipop/modules/sekai/settings/PluginEditor.qml
+index 6ea9c49..8e1ab93 100644
+--- a/sekaipop/modules/sekai/settings/PluginEditor.qml
++++ b/sekaipop/modules/sekai/settings/PluginEditor.qml
+@@ -18,6 +18,7 @@ Item {
+     // This monitor's theme: Theme.of() gives the shell's own unless the monitor has one.
+     readonly property var mt: Theme.of(QsWindow.window)
+ 
++    readonly property bool liquidSettings: !!pst && (pst.plugin.extensions || []).indexOf("settings")>=0
+     property var pst: null              // its PluginState
+     readonly property var plugin: pst ? pst.plugin : null
+ 
+@@ -229,9 +230,17 @@ Item {
+                 }
+             }
+ 
++            // BEGIN native plugin settings button
++            SettingChip {
++                visible: root.liquidSettings
++                label: "Open settings"
++                icon: "tune"
++                onClicked: { PluginService.openExtensionSettings(root.pst.pluginId) }
++            }
++            // END native plugin settings button
+             // ----- settings -----
+             PluginSectionHead {
+-                visible: root.plugin !== null && Object.keys(root.plugin.settings).length > 0
++                visible: !root.liquidSettings && root.plugin !== null && Object.keys(root.plugin.settings).length > 0
+                 width: parent.width
+                 title: "Settings"
+                 note: "Saved as you change them."
+@@ -241,7 +250,7 @@ Item {
+             }
+ 
+             Repeater {
+-                model: root.groups
++                model: root.liquidSettings ? [] : root.groups
+ 
+                 delegate: Column {
+                     id: grp
+diff --git a/sekaipop/services/PluginService.qml b/sekaipop/services/PluginService.qml
+index 32b9a52..88c7188 100644
+--- a/sekaipop/services/PluginService.qml
++++ b/sekaipop/services/PluginService.qml
+@@ -252,6 +252,30 @@ Singleton {
+         }
+     }
+ 
++
++    // Optional native surfaces. No plugin writes shell files or runs an installer.
++    property string settingsExtensionId: ""
++    property bool settingsExtensionOpen: false
++    property var widgetRects: ({})
++    function reportWidgetRect(key, rect) {
++        if(JSON.stringify(widgetRects[key])===JSON.stringify(rect))return
++        const next=Object.assign({},widgetRects);next[key]=rect;widgetRects=next
++    }
++    function extensionState(slot) {
++        const entry=root.found.find(f=>(f.plugin.extensions || []).indexOf(slot)>=0)
++        return entry ? root.stateFor(entry.plugin.id) : null
++    }
++    function extensionEnabled(st, slot) {
++        if(!st || !st.loaded)return false
++        return !st.service || typeof st.service.extensionEnabled!=="function" || st.service.extensionEnabled(slot)
++    }
++    function openExtensionSettings(id) {
++        const st=root.stateFor(id)
++        if(!st || (st.plugin.extensions || []).indexOf("settings")<0)return
++        root.settingsExtensionId=st.pluginId;root.settingsExtensionOpen=true
++        root.askSettings(st.pluginId, "")
++    }
++
+     // ===== ipc =====
+     IpcHandler {
+         target: "plugins"
+diff --git a/sekaipop/services/PluginState.qml b/sekaipop/services/PluginState.qml
+index dc25880..bb4fb67 100644
+--- a/sekaipop/services/PluginState.qml
++++ b/sekaipop/services/PluginState.qml
+@@ -274,6 +274,9 @@ QtObject {
+     // What Service.qml is handed: the part of `host` that is not about a surface (no theme,
+     // monitor or size). Its `working` is true while any surface shows; `wanted` says which.
+     readonly property QtObject serviceHost: QtObject {
++        readonly property var capabilities: ["native-dock-v1","native-wallpaper-v1","native-settings-v1","transient-palette-v1"]
++        readonly property bool settingsOpen: PluginService.settingsExtensionId===root.pluginId && PluginService.settingsExtensionOpen
++        function setSettingsOpen(on) {if(on)PluginService.openExtensionSettings(root.pluginId);else PluginService.settingsExtensionOpen=false}
+         readonly property int apiVersion: PM.API_VERSION
+         readonly property string id: root.pluginId
+         readonly property string name: root.plugin.name
+diff --git a/sekaipop/services/ThemeService.qml b/sekaipop/services/ThemeService.qml
+index a862711..05aadad 100644
+--- a/sekaipop/services/ThemeService.qml
++++ b/sekaipop/services/ThemeService.qml
+@@ -344,7 +344,46 @@ Singleton {
+                 return i
+         return 0
+     }
+-    readonly property var palette: root.groups[root.index].c
++    // Music Palette transient bridge v1
++    // Never save music colours as the user's theme/custom palette.
++    property var musicPalette: null
++    property string musicOwner: ""
++    property var musicSaved: null
++
++    function restoreMusic() {
++        const saved = root.musicSaved
++        root.musicSaved = null
++        if (saved) {
++            if (JSON.stringify(root.customColors) !== JSON.stringify(saved.custom)) {
++                root.customColors = saved.custom
++                if (saved.custom)
++                    customSaver.save(saved.custom.join(","))
++            }
++            root.matugenColors = saved.matugen
++            root.screenMatugen = saved.screens
++            if (SettingsService.get("theme.screens") !== saved.screenGroups)
++                SettingsService.set("theme.screens", saved.screenGroups)
++            if (root.mode !== saved.mode)
++                root.setMode(saved.mode)
++            root.setTheme(saved.theme)
++        }
++        root.musicPalette = null
++        root.musicOwner = ""
++    }
++    property double musicDeadline: 0
++    readonly property bool musicActive: root.musicPalette !== null
++    readonly property var palette: root.musicPalette || root.groups[root.index].c
++
++    Timer {
++        interval: 500
++        repeat: true
++        running: root.musicActive
++        onTriggered: {
++            if (Date.now() >= root.musicDeadline) {
++                root.restoreMusic()
++            }
++        }
++    }
+     readonly property string currentName: root.groups[root.index].name
+ 
+     // Set once the user (or IPC) has picked something this session, so the
+@@ -400,6 +439,8 @@ Singleton {
+     }
+ 
+     function paletteFor(name) {
++        if (root.musicActive)
++            return root.musicPalette
+         const id = root.themeFor(name)
+         // A monitor's own matugen colours wear the pinned accents too (matugen.pinA / pinB),
+         // put on here so a pin change reaches every monitor at once.
+@@ -746,7 +787,7 @@ Singleton {
+ 
+     // What LockPalette.qml reads. Until matugen has produced the lockscreen's
+     // colours (or if it fails) it keeps the shell palette, so it is never blank.
+-    readonly property var lockPalette: (root.lockOwnColours && root.lockMatugenPalette) ? root.lockMatugenPalette : root.palette
++    readonly property var lockPalette: root.musicActive ? root.musicPalette : ((root.lockOwnColours && root.lockMatugenPalette) ? root.lockMatugenPalette : root.palette)
+ 
+     function regenerateLock(force) {
+         if (!root.lockOwnColours)
+@@ -885,7 +926,7 @@ Singleton {
+     function discordArgs() {
+         const p = root.palette
+         const keys = ["border", "A", "B", "deep", "hoverTint", "divider", "boardBg", "boardDot", "rimHi"]
+-        const useMatugen = root.current === "matugen" || root.discordMatugen
++        const useMatugen = !root.musicActive && (root.current === "matugen" || root.discordMatugen)
+         const out = ["mode=" + root.discordMode, "source=" + (useMatugen ? "matugen" : "theme")]
+         for (let i = 0; i < keys.length; i++) {
+             const v = p[keys[i]]
+@@ -1004,7 +1045,7 @@ Singleton {
+     // (the matugen theme before the wallpaper has been restored).
+     function systemArgs(force) {
+         const out = []
+-        if (root.current === "matugen") {
++        if (root.current === "matugen" && !root.musicActive) {
+             const img = WallpaperService.imagePath
+             if (img === "")
+                 return null
+@@ -1018,7 +1059,7 @@ Singleton {
+         out.push("mode=" + (root.dark ? "dark" : "light"),
+                  // A grey seed under the normal tonal-spot scheme still comes out
+                  // faintly coloured; matugen's own monochrome scheme is truly grey.
+-                 "type=" + ((root.current !== "matugen" && root.palette.mono === true) ? "scheme-monochrome" : root.matugenType),
++                 "type=" + (((root.musicActive || root.current !== "matugen") && root.palette.mono === true) ? "scheme-monochrome" : root.matugenType),
+                  "targets=" + root.systemTargets,
+                  "gtktheme=" + (root.systemSetGtkTheme ? "on" : "off"),
+                  "reload=" + (root.systemReload === "" ? "off" : root.systemReload),
+@@ -1259,6 +1300,38 @@ Singleton {
+     IpcHandler {
+         target: "theme"
+ 
++        // A renewable lease restores colours even if the plugin is killed.
++        function musicSet(owner: string, csv: string): string {
++            if (!root.themeLoaded || !SettingsService.loaded
++                    || (root.current === "matugen" && !root.matugenPalette))
++                return "theme not ready"
++            const c = PM.parse(csv)
++            if (!owner || !c)
++                return "invalid palette"
++            const p = PM.toShell(c)
++            if (!root.musicActive)
++                root.musicSaved = {theme: root.current, custom: root.customColors,
++                    matugen: root.matugenColors, screens: root.screenMatugen,
++                    screenGroups: SettingsService.get("theme.screens"), mode: root.mode}
++            root.musicOwner = owner
++            root.musicDeadline = Date.now() + 5000
++            if (JSON.stringify(root.musicPalette) !== JSON.stringify(p))
++                root.musicPalette = p
++            return "ok"
++        }
++
++        function musicClear(owner: string): string {
++            if (owner === root.musicOwner) {
++                root.restoreMusic()
++            }
++            return "ok"
++        }
++
++        function musicStatus(): string {
++            return JSON.stringify({active: root.musicActive, palette: root.palette,
++                theme: root.current, owner: root.musicOwner})
++        }
++
+         function toggle(): void {
+             root.togglePicker()
+         }

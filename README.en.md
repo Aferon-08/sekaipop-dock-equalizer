@@ -1,5 +1,7 @@
 # SekaiPOP Dock Equalizer & Living Wallpapers
 
+> **3.0.0-rc.1 — native extension preview.** Requires a proposed shell API, currently absent from official SekaiPOP. [Integration status and patch](docs/NATIVE-INTEGRATION.md). install.py is now a no-op notice. The last adapter-based stable release is [2.22.0](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases/tag/v2.22.0).
+
 [![Checks](https://github.com/Aferon-08/sekaipop-dock-equalizer/actions/workflows/checks.yml/badge.svg)](https://github.com/Aferon-08/sekaipop-dock-equalizer/actions/workflows/checks.yml) [![Version](https://img.shields.io/github/v/release/Aferon-08/sekaipop-dock-equalizer)](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 [Русский](README.md) · [Installation](docs/INSTALL.md) · [Releases](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases)
@@ -38,26 +40,9 @@ The demo uses a sample phone with the real settings component. [Video](docs/medi
 
 Voice analysis is **experimental**: a dense mix or missing parallel text can prevent reliable voice-specific lyrics. Names are not inferred as identities; unnamed roles receive numbered labels. Basic visuals work without any ML runtime.
 
-## Install
+## Install this preview
 
-Requires an existing SekaiPOP installation with plugin API 1, Quickshell, Hyprland, Python 3, CAVA and PipeWire-Pulse/PulseAudio. Tested with SekaiPOP `1.0.0`, commit [`69e1df0`](https://github.com/Blapples/SekaiPop/commit/69e1df0f282ca9a5193c1a628b346e5df01c7d93), Quickshell `0.3.2`, Qt `6.12`, Hyprland `0.57`.
-
-```sh
-git clone https://github.com/Aferon-08/sekaipop-dock-equalizer.git
-cd sekaipop-dock-equalizer
-python3 install.py
-```
-
-The installer backs up and patches five shell files, then restarts SekaiPOP. This is a **local shell adapter**, not a drop-in desktop widget: the shell's plugin manager alone cannot install the dock and wallpaper integrations.
-
-**A normal install/reinstall clears saved recordings, word timings and listening markers, and renews the wallpaper installation seed.** To update or repair after a SekaiPOP upgrade while keeping your data:
-
-```sh
-git pull --ff-only
-python3 install.py --repair
-```
-
-To uninstall, run `python3 install.py --uninstall` from this checkout. Full dependency, model, backup and removal instructions: [INSTALL.md](docs/INSTALL.md).
+See [NATIVE-INTEGRATION.md](docs/NATIVE-INTEGRATION.md). The plugin is now pure native surface components; no shell-file patching or install hook. It requires the proposed shell extension API. Old install.py/--repair instructions apply only to tag v2.22.0.
 
 ## Use and data
 

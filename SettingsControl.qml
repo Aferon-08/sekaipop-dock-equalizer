@@ -14,7 +14,7 @@ Rectangle {
  readonly property bool numeric:typeof original==="number"
  readonly property bool boolean:typeof original==="boolean"
  height:visible?body.implicitHeight+26:0
- radius:16;color:Qt.rgba(accent.r,accent.g,accent.b,.065);border.color:Qt.rgba(accent.r,accent.g,accent.b,.12)
+ radius:16;color:Qt.rgba(.015,.035,.035,.35);border.color:Qt.rgba(accent.r,accent.g,accent.b,.12)
  ColumnLayout {id:body;x:16;y:13;width:parent.width-32;spacing:6
   RowLayout {Layout.fillWidth:true
    Label {text:root.info.label || root.settingKey;wrapMode:Text.WordWrap;Layout.fillWidth:true;color:root.ink;font.pixelSize:14}

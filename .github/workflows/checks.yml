@@ -25,3 +25,20 @@ jobs:
         run: node tests/tube-and-family.mjs
       - name: Independent bubble carriers and plastic wall
         run: node tests/bubble-family.mjs
+      - name: Settings liquid transition geometry
+        run: node tests/settings-motion.mjs
+      - name: Native installation has no patching side effects
+        run: python tests/installer.py
+      - name: Cached lyric finale
+        run: node tests/finale-cache.mjs
+      - uses: actions/checkout@v4
+        with:
+          repository: Blapples/SekaiPop
+          ref: 036afe49b6ee40bf18c01efdb585f000422c7c21
+          path: upstream-shell
+      - name: Proposed API patch applies to pinned shell
+        run: git -C upstream-shell apply --check "$GITHUB_WORKSPACE/integration/sekaipop-native-extensions.patch"
+      - name: Native API and legacy manifest compatibility
+        run: |
+          git -C upstream-shell apply "$GITHUB_WORKSPACE/integration/sekaipop-native-extensions.patch"
+          node tests/native-api.mjs upstream-shell/sekaipop/modules/common/functions/PluginManifest.js

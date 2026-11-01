@@ -7,6 +7,14 @@ QtObject {
     id: root
     required property var host
     property bool settingsPanelOpen: false
+    readonly property bool nativeIntegration: !!host.capabilities && ["native-dock-v1","native-wallpaper-v1","native-settings-v1"].every(c=>host.capabilities.indexOf(c)>=0)
+    function extensionEnabled(slot) {
+        return slot==="wallpaper" ? host.settings.proceduralWallpaper===true && wallpaperError==="" : slot==="dock" ? host.settings.enabled!==false : true
+    }
+    property Process missingApiNotice:Process {
+        command:["notify-send","Dock Equalizer","Нужен SekaiPOP с native extensions API. Файлы оболочки автоматически не изменяются. См. docs/NATIVE-INTEGRATION.md."]
+        running:!root.nativeIntegration
+    }
     // A single session seed for all monitors; changing palette never regenerates geometry.
     property var widgetRects: ({})
     function setWidgetRect(id,rect) {
@@ -48,6 +56,9 @@ QtObject {
     }
     property var bands: []
     property string error: ""
+    property bool profileFrames:false
+    property var frameSamples:({})
+    function collectFrame(screen,seconds){if(!profileFrames)return;const a=frameSamples[screen] || (frameSamples[screen]=[]);if(a.length<4000)a.push(seconds*1000)}
     property int frames: 0
     property int retryCount: 0
     property bool waiting: false
@@ -160,10 +171,17 @@ QtObject {
 
     property IpcHandler ipc: IpcHandler {
         target: "dockequalizer"
-        function settingsPanel(show: bool): void {root.settingsPanelOpen=show}
-        function settingsPanelStatus(): string {return JSON.stringify({open:root.settingsPanelOpen,count:Object.keys(root.host.settings).length})}
+        function profile(on:bool):string {
+            if(on){root.frameSamples={};root.profileFrames=true;return "started"}
+            root.profileFrames=false
+            const result={}
+            for(const key of Object.keys(root.frameSamples)){const a=root.frameSamples[key].slice(10).sort((x,y)=>x-y);if(a.length)result[key]={frames:a.length,median:a[Math.floor(a.length*.5)],p95:a[Math.floor(a.length*.95)],worst:a[a.length-1]}}
+            return JSON.stringify(result)
+        }
+        function settingsPanel(show: bool): void {if(root.host.setSettingsOpen)root.host.setSettingsOpen(show);else root.settingsPanelOpen=show}
+        function settingsPanelStatus(): string {return JSON.stringify({open:root.host.settingsOpen || root.settingsPanelOpen,count:Object.keys(root.host.settings).length})}
         function status(): string {
-            return JSON.stringify({ playing: root.playing, working: root.wanted, running: root.running,
+            return JSON.stringify({ nativeIntegration:root.nativeIntegration, playing: root.playing, working: root.wanted, running: root.running,
                 players: root.playerModel.values.length, surfaces: root.surfaces,
                 frames: root.frames, beatPulse: root.beatPulse, bpm: root.beatBpm, beatConfidence: root.beatConfidence, audible: root.audible, error: root.error,
                 wordtimeBusy: root.wordtimes.busy, wordtimeCached: Object.keys(root.wordtimes.cache).length,

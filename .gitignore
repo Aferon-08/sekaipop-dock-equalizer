@@ -19,3 +19,5 @@ models/
 *.mp3
 *.ogg
 .DS_Store
+
+upstream-shell/

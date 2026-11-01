@@ -6,6 +6,7 @@ import QtQuick
 Item {
     id: root
     required property var host
+    FrameAnimation {running:!!root.host.service && !!root.host.service.profileFrames;onTriggered:root.host.service.collectFrame(root.host.dock.screenName,frameTime)}
     readonly property var dock: host.dock.item
     readonly property bool vertical: host.dock.vertical
     readonly property real bodyWidth: dock.capWidth

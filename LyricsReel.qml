@@ -11,6 +11,7 @@ Item {
     property real duration: 0
     property real time: 0
     property bool playing: false
+    property bool rendering: true
     property bool markerVisible: true
     property real upperContextOpacity: 1
     property real pixelSize: 17
@@ -129,7 +130,7 @@ Item {
             readonly property real edge: 1 - LM.smooth((Math.abs(distance) - 1.15) / 0.6)
             readonly property real expanded: Math.max(0, Math.min(1, (root.height - 34) / 60))
             readonly property real compactFade: LM.smooth(emphasis)
-            active: Math.abs(index - root.base) <= 2
+            active: root.rendering && Math.abs(index - root.base) <= 2
             onLoaded: ++root.layoutEpoch
             x: 0
             y: root.height / 2 - height / 2 + distance * 30

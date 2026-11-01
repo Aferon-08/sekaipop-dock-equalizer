@@ -1,5 +1,7 @@
 # SekaiPOP Dock Equalizer & Living Wallpapers
 
+> **3.0.0-rc.1 — предварительная ветка native-extensions.** Требуется предложенный API оболочки; в текущем официальном SekaiPOP его ещё нет. [Статус, патч и установка](docs/NATIVE-INTEGRATION.md). install.py больше ничего не устанавливает. Последний стабильный релиз с адаптерами — [2.22.0](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases/tag/v2.22.0).
+
 [![Checks](https://github.com/Aferon-08/sekaipop-dock-equalizer/actions/workflows/checks.yml/badge.svg)](https://github.com/Aferon-08/sekaipop-dock-equalizer/actions/workflows/checks.yml) [![Version](https://img.shields.io/github/v/release/Aferon-08/sekaipop-dock-equalizer)](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 [English](README.en.md) · [Установка](docs/INSTALL.md) · [Настройки и лирика](docs/USAGE.md) · [Устранение проблем](docs/TROUBLESHOOTING.md) · [Релизы](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases)
@@ -56,28 +58,9 @@
 
 **Важные границы:** анализ голосов экспериментальный. Качество зависит от микса и источника текста; отдельные параллельные партии не всегда можно восстановить. Это не обещание безошибочной расшифровки любого трека. [Подробнее](docs/USAGE.md#голоса-и-ограничения-анализа).
 
-## Быстрая установка
+## Установка предварительной версии
 
-Нужны уже установленный SekaiPOP с API плагинов 1, Quickshell, Hyprland, Python 3, CAVA и PipeWire-Pulse/PulseAudio. Проверенная конфигурация: SekaiPOP `1.0.0` / commit [`69e1df0`](https://github.com/Blapples/SekaiPop/commit/69e1df0f282ca9a5193c1a628b346e5df01c7d93), Quickshell `0.3.2`, Qt `6.12`, Hyprland `0.57`.
-
-```sh
-git clone https://github.com/Aferon-08/sekaipop-dock-equalizer.git
-cd sekaipop-dock-equalizer
-python3 install.py
-```
-
-Установщик создаёт резервную копию и перезапускает оболочку. Он добавляет адаптеры в **Dock.qml, WallpaperLayer.qml, EditChrome.qml, PluginEditor.qml и QuickPanel.qml**; обычного добавления папки плагина через менеджер SekaiPOP недостаточно.
-
-**При полной установке/переустановке очищаются сохранённые записи Spotify, разметки и отметки прослушивания; создаётся новый seed обоев.** Обновление с сохранением данных:
-
-```sh
-git pull --ff-only
-python3 install.py --repair
-```
-
-`--repair` также возвращает подключения после обновления SekaiPOP, перезаписавшего файлы оболочки. Если структура файлов не распознана, установщик прекращает работу до её изменения.
-
-[Полная инструкция: зависимости, CPU/CUDA, удаление и резервные копии](docs/INSTALL.md).
+Читайте [NATIVE-INTEGRATION.md](docs/NATIVE-INTEGRATION.md). Эта ветка не запускает установщики и не изменяет код оболочки. Для неё нужна оболочка с native extension API. Обычная v2-инструкция install.py/--repair относится только к стабильному тегу v2.22.0.
 
 ## Начать пользоваться
 
