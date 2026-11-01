@@ -1,0 +1,191 @@
+{
+  "id": "dock-equalizer",
+  "name": "Dock Equalizer",
+  "version": "2.21.2",
+  "api": 1,
+  "description": "Музыкальный док с лирикой и процедурные обои Material + стекло.",
+  "icon": "graphic_eq",
+  "settings": {
+    "enabled": true,
+    "width": 200,
+    "height": 38,
+    "gap": 12,
+    "sensitivity": 1.25,
+    "style": "wave",
+    "collapseDelay": 600,
+    "lyrics": true,
+    "expandLyrics": true,
+    "lyricsWidth": 560,
+    "autoSpotify": true,
+    "multivoice": true,
+    "analysisThreads": 8,
+    "analysisDevice": "nvidia",
+    "proceduralWallpaper": true,
+    "wallpaperMotion": true,
+    "wallpaperDensity": "auto",
+    "wallpaperGlass": 0.65,
+    "wallpaperRegenerate": false,
+    "wallpaperPet": true
+  },
+  "settingsInfo": {
+    "enabled": {
+      "label": "Показывать по краям дока",
+      "group": "Расположение"
+    },
+    "width": {
+      "label": "Длина каждой капсулы",
+      "min": 80,
+      "max": 320,
+      "step": 10,
+      "unit": "px",
+      "group": "Расположение"
+    },
+    "height": {
+      "label": "Высота капсул",
+      "min": 24,
+      "max": 64,
+      "step": 2,
+      "unit": "px",
+      "group": "Расположение"
+    },
+    "gap": {
+      "label": "Отступ от дока",
+      "min": 4,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "group": "Расположение"
+    },
+    "sensitivity": {
+      "label": "Чувствительность",
+      "min": 0.5,
+      "max": 3,
+      "step": 0.05,
+      "group": "Звук"
+    },
+    "style": {
+      "label": "Вид визуализатора",
+      "choices": [
+        {
+          "value": "wave",
+          "label": "Волна"
+        },
+        {
+          "value": "bars",
+          "label": "Столбики"
+        }
+      ],
+      "group": "Звук"
+    },
+    "collapseDelay": {
+      "label": "Задержка перед складыванием",
+      "description": "Время на затухание волны после паузы.",
+      "min": 200,
+      "max": 2000,
+      "step": 50,
+      "unit": "мс",
+      "group": "Анимация"
+    },
+    "lyrics": {
+      "label": "Лирика вместо иконок",
+      "description": "Когда музыка играет и указатель находится вне дока.",
+      "group": "Лирика"
+    },
+    "expandLyrics": {
+      "label": "Раскрывать на рабочем столе",
+      "description": "Если на текущем рабочем столе монитора нет видимых окон.",
+      "group": "Лирика"
+    },
+    "lyricsWidth": {
+      "label": "Ширина раскрытого дока",
+      "min": 480,
+      "max": 800,
+      "step": 20,
+      "unit": "px",
+      "group": "Лирика"
+    },
+    "autoSpotify": {
+      "label": "Запись Spotify для лирики",
+      "description": "Сохранять полный поток Spotify. Анализ запускается вручную значком или кнопкой «Перегенерировать».",
+      "group": "Лирика"
+    },
+    "multivoice": {
+      "label": "Многоголосная лирика",
+      "description": "Удерживать области голосов, отображать подпевки и анализировать партии локально.",
+      "group": "Лирика"
+    },
+    "analysisThreads": {
+      "label": "Потоки CPU для анализа",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "group": "Лирика"
+    },
+    "analysisDevice": {
+      "label": "Устройство анализа",
+      "choices": [
+        {
+          "value": "nvidia",
+          "label": "Дискретная NVIDIA CUDA + CPU"
+        },
+        {
+          "value": "cpu",
+          "label": "Только CPU"
+        }
+      ],
+      "group": "Лирика"
+    },
+    "proceduralWallpaper": {
+      "label": "Процедурные обои",
+      "description": "Отдельная композиция на каждом мониторе с общей системной палитрой.",
+      "group": "Процедурные обои"
+    },
+    "wallpaperMotion": {
+      "label": "Лёгкие движения и блики",
+      "description": "Ограниченная частота обновления. Анимация за полноэкранными окнами приостанавливается.",
+      "group": "Процедурные обои"
+    },
+    "wallpaperDensity": {
+      "label": "Плотность композиции",
+      "choices": [
+        {
+          "value": "auto",
+          "label": "Случайная: спокойная или насыщенная"
+        },
+        {
+          "value": "calm",
+          "label": "Спокойная"
+        },
+        {
+          "value": "rich",
+          "label": "Насыщенная"
+        }
+      ],
+      "group": "Процедурные обои"
+    },
+    "wallpaperGlass": {
+      "label": "Количество стекла",
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "group": "Процедурные обои"
+    },
+    "wallpaperRegenerate": {
+      "label": "Создать новую композицию",
+      "description": "Однократное действие: переключатель сам вернётся в выключенное состояние.",
+      "group": "Процедурные обои"
+    },
+    "wallpaperPet": {
+      "label": "Огонёк в стеклянных фигурах",
+      "description": "Гуляет и танцует под музыку, иногда разделяется на двоих.",
+      "group": "Процедурные обои"
+    }
+  },
+  "groups": [
+    "Расположение",
+    "Звук",
+    "Анимация",
+    "Лирика",
+    "Процедурные обои"
+  ]
+}

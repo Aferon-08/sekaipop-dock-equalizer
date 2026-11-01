@@ -1,0 +1,21 @@
+name: Bug report / Ошибка
+description: A reproducible defect in the dock, lyrics or wallpaper.
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / Окружение
+      description: Plugin version, SekaiPOP commit, Quickshell/Qt, Hyprland, GPU/renderer, monitor scale.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps and expected behavior / Шаги и ожидаемое поведение
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs, screenshots or short video / Журнал или видео
+      description: Remove tokens, private paths and unrelated data. Do not upload music recordings.
