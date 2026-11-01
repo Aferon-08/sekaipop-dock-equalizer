@@ -1,4 +1,6 @@
 from pathlib import Path
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parent.parent))
 import tempfile,importlib.util,subprocess,os
 s=Path(__file__).resolve().parent.parent
 spec=importlib.util.spec_from_file_location('installer',s/'install.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
@@ -12,6 +14,10 @@ with tempfile.TemporaryDirectory() as d:
  t=Path(d);shell=t/'shell'
  for rel,text in [('modules/sekai/dock/Dock.qml',dock),('modules/sekai/background/WallpaperLayer.qml',wall),('services/PluginService.qml',''),('modules/sekai/editMode/EditChrome.qml',chrome)]:
   p=shell/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(text)
+ extra_original={}
+ for relative in ['settings/PluginEditor.qml','quickPanel/QuickPanel.qml']:
+  from settings_adapter import transform
+  dest=shell/'modules/sekai'/relative;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_text(transform((live/'modules/sekai'/relative).read_text(),relative,True));extra_original[relative]=dest.read_text()
  env=dict(os.environ,XDG_DATA_HOME=str(t/'data'),XDG_STATE_HOME=str(t/'state'),SEKAIPOP_PLUGINS_DIR=str(t/'plugins'))
  data=t/'data/sekaipop/dock-equalizer';data.mkdir(parents=True)
  for name in ['wordtimes','recordings','recording-seen','audio-tmp']:(data/name).mkdir();(data/name/'fixture').write_text('old')
@@ -35,4 +41,5 @@ with tempfile.TemporaryDirectory() as d:
  assert (shell/'modules/sekai/dock/Dock.qml').read_text()==dock
  assert (shell/'modules/sekai/background/WallpaperLayer.qml').read_text()==wall
  assert (shell/'modules/sekai/editMode/EditChrome.qml').read_text()==chrome
+ for relative,text in extra_original.items():assert (shell/'modules/sekai'/relative).read_text()==text,relative
  print('PASS shell update recovery, idempotent repair preserving data, install/reinstall/uninstall, byte-for-byte restore')

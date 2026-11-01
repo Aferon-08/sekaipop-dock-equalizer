@@ -6,6 +6,7 @@ import Quickshell.Services.Mpris
 QtObject {
     id: root
     required property var host
+    property bool settingsPanelOpen: false
     // A single session seed for all monitors; changing palette never regenerates geometry.
     property var widgetRects: ({})
     function setWidgetRect(id,rect) {
@@ -159,6 +160,8 @@ QtObject {
 
     property IpcHandler ipc: IpcHandler {
         target: "dockequalizer"
+        function settingsPanel(show: bool): void {root.settingsPanelOpen=show}
+        function settingsPanelStatus(): string {return JSON.stringify({open:root.settingsPanelOpen,count:Object.keys(root.host.settings).length})}
         function status(): string {
             return JSON.stringify({ playing: root.playing, working: root.wanted, running: root.running,
                 players: root.playerModel.values.length, surfaces: root.surfaces,

@@ -4,7 +4,7 @@
 
 [Русский](README.md) · [Installation](docs/INSTALL.md) · [Releases](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases)
 
-An independent extension for **[SekaiPOP](https://github.com/Blapples/SekaiPop)** on Hyprland: a liquid music dock, word-timed lyrics and procedural glass wallpapers with a tiny firefly companion. **Version 2.21.2 · GPL-3.0.** The settings UI and detailed documentation are currently primarily in Russian.
+An independent extension for **[SekaiPOP](https://github.com/Blapples/SekaiPop)** on Hyprland: a liquid music dock, word-timed lyrics and procedural glass wallpapers with a tiny firefly companion. **Version 2.22.0 · GPL-3.0.** The settings UI and detailed documentation are currently primarily in Russian.
 
 ![Music dock demo](docs/media/dock.gif)
 
@@ -17,6 +17,14 @@ These are recordings of the real QML components in a controlled demo scene, usin
 ![Multiple voices, backing phrase and shared chorus](docs/media/voices.gif)
 
 The multi-voice demo uses explicitly tagged sample data; it demonstrates the UI, not automatic voice-recognition accuracy. [Video](docs/media/voices.mp4).
+
+## 2.22.0 — Liquid settings panel
+
+**55 settings**, search, smooth scrolling and per-setting / confirmed full reset. The phone morphs through an irregular glass droplet into a taller settings panel, then returns on Back or Escape. [Settings catalogue (RU)](docs/SETTINGS.md).
+
+![Liquid settings panel](docs/media/settings.gif)
+
+The demo uses a sample phone with the real settings component. [Video](docs/media/settings.mp4).
 
 ## Features
 
@@ -40,7 +48,7 @@ cd sekaipop-dock-equalizer
 python3 install.py
 ```
 
-The installer backs up and patches three shell files, then restarts SekaiPOP. This is a **local shell adapter**, not a drop-in desktop widget: the shell's plugin manager alone cannot install the dock and wallpaper integrations.
+The installer backs up and patches five shell files, then restarts SekaiPOP. This is a **local shell adapter**, not a drop-in desktop widget: the shell's plugin manager alone cannot install the dock and wallpaper integrations.
 
 **A normal install/reinstall clears saved recordings, word timings and listening markers, and renews the wallpaper installation seed.** To update or repair after a SekaiPOP upgrade while keeping your data:
 

@@ -2,6 +2,12 @@ import QtQuick
 
 Item {
     id: root
+    property real amplitude: 3.5
+    property real wavelength: 30
+    property real thickness: 3
+    onAmplitudeChanged: canvas.requestPaint()
+    onWavelengthChanged: canvas.requestPaint()
+    onThicknessChanged: canvas.requestPaint()
     property real fraction: 0
     property bool indeterminate: false
     property bool playing: true
@@ -27,14 +33,14 @@ Item {
             const mid = height / 2
             const end = Math.max(3, Math.min(width - 5, (root.indeterminate ? 0.45 + 0.35 * Math.sin(root.phase * 2) : root.fraction) * (width - 8) + 4))
             ctx.lineCap = "round"
-            ctx.lineWidth = 3
+            ctx.lineWidth = root.thickness
             ctx.strokeStyle = Qt.rgba(root.ink.r, root.ink.g, root.ink.b, 0.16)
             ctx.beginPath(); ctx.moveTo(Math.min(width - 4, end + 9), mid); ctx.lineTo(width - 4, mid); ctx.stroke()
             ctx.strokeStyle = root.accent
             ctx.beginPath()
             for (let x = 4; x <= end; x += 1) {
                 const envelope = Math.min(1, (x - 4) / 12, (end - x) / 12)
-                const y = mid + Math.sin(x * Math.PI / 15 - root.phase * Math.PI * 2) * 3.5 * root.waveAmount * Math.max(0, envelope)
+                const y = mid + Math.sin(x * Math.PI * 2 / root.wavelength - root.phase * Math.PI * 2) * root.amplitude * root.waveAmount * Math.max(0, envelope)
                 if (x === 4) ctx.moveTo(x, y); else ctx.lineTo(x, y)
             }
             ctx.stroke()

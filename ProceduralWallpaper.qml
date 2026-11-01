@@ -32,7 +32,7 @@ Item {
  property real ambientTime:0
  property double lastAmbientTick:0
  readonly property bool managesPetClock:true
- readonly property real movement:settings.wallpaperMotion===false?0:1
+ readonly property real movement:settings.wallpaperMotion===false?0:(settings.wallpaperMotionAmount ?? 1)
  readonly property real lighting:Math.min(1,Math.max(0,(intro-.75)/.8))
  readonly property string density:settings.wallpaperDensity||"auto"
  readonly property real glassAmount:settings.wallpaperGlass===undefined?.65:settings.wallpaperGlass
@@ -48,17 +48,17 @@ Item {
  property color c:dark?mix(mix(accentA,accentB,.5),Qt.color("#ffffff"),.10):mix(mix(accentA,accentB,.5),Qt.color("#ffffff"),.48)
  readonly property var colors:[a,b,c]
  property color petColor:mix(accentA,accentB,.35)
- Behavior on petColor {ColorAnimation {duration:1400}}
+ Behavior on petColor {ColorAnimation {duration:root.settings.paletteDuration ?? 1400}}
  readonly property color highlight:mix(Qt.color("#ffffff"),accentB,.10)
- Behavior on base {ColorAnimation {id:baseAnimation;duration:1400}}
- Behavior on a {ColorAnimation {id:aAnimation;duration:1400}}
- Behavior on b {ColorAnimation {id:bAnimation;duration:1400}}
- Behavior on c {ColorAnimation {id:cAnimation;duration:1400}}
+ Behavior on base {ColorAnimation {id:baseAnimation;duration:root.settings.paletteDuration ?? 1400}}
+ Behavior on a {ColorAnimation {id:aAnimation;duration:root.settings.paletteDuration ?? 1400}}
+ Behavior on b {ColorAnimation {id:bAnimation;duration:root.settings.paletteDuration ?? 1400}}
+ Behavior on c {ColorAnimation {id:cAnimation;duration:root.settings.paletteDuration ?? 1400}}
  clip:true
  function replay(){intro=0;arrival.restart()}
  onLayoutChanged:{layoutRevision++;recapture.restart();if(ready && animateIntro) replay()}
  Component.onCompleted:{ready=true;if(animateIntro) replay();else intro=4}
- NumberAnimation {id:arrival;target:root;property:"intro";from:0;to:4;duration:4000;running:false;paused:running && !root.working;onFinished:{capture.scheduleUpdate();wallCapture.scheduleUpdate()}}
+ NumberAnimation {id:arrival;target:root;property:"intro";from:0;to:4;duration:root.settings.wallpaperIntro ?? 4000;running:false;paused:running && !root.working;onFinished:{capture.scheduleUpdate();wallCapture.scheduleUpdate()}}
  // One bounded 60Hz visual clock / 30Hz physics accumulator per monitor.
  property real logicAccumulator:0
  property double lastLogicTick:0
@@ -104,7 +104,7 @@ Item {
  readonly property bool backdropLive: working && (entering || (movement===0 && (baseAnimation.running || aAnimation.running || bAnimation.running || cAnimation.running)))
  ShaderEffectSource {
   id:capture;anchors.fill:parent;sourceItem:opaqueScene;hideSource:false;live:root.backdropLive;visible:false
-  textureSize:Qt.size(Math.min(1280,root.width),Math.min(1280,root.width)*root.height/Math.max(1,root.width))
+  textureSize:Qt.size(Math.min(root.settings.wallpaperTexture ?? 1280,root.width),Math.min(root.settings.wallpaperTexture ?? 1280,root.width)*root.height/Math.max(1,root.width))
  }
  Timer {id:recapture;interval:150;onTriggered:{capture.scheduleUpdate();wallCapture.scheduleUpdate()}}
  onBaseChanged:recapture.restart()
@@ -123,7 +123,7 @@ Item {
  ShaderEffectSource {
   id:wallCapture;sourceItem:wallSilhouettes;hideSource:true;visible:false
   live:root.working && root.entering
-  textureSize:Qt.size(Math.min(1280,root.width),Math.min(1280,root.width)*root.height/Math.max(1,root.width))
+  textureSize:Qt.size(Math.min(root.settings.wallpaperTexture ?? 1280,root.width),Math.min(root.settings.wallpaperTexture ?? 1280,root.width)*root.height/Math.max(1,root.width))
  }
  WallpaperViewport {scene:root
  WallpaperWires {id:wireNetwork;anchors.fill:parent;scene:root}

@@ -31,7 +31,7 @@ Item {
         target: root
         property: "level"
         to: 0
-        duration: Math.min(450, Math.max(120, (root.host.settings.collapseDelay || 600) - 100))
+        duration: Math.min(root.host.settings.spectrumFade ?? 450, Math.max(120, (root.host.settings.collapseDelay || 600) - 100))
         easing.type: Easing.OutCubic
         onFinished: root.heldValues = []
     }
@@ -73,7 +73,7 @@ Item {
             renderStrategy: Canvas.Threaded
             transform: Scale {
                 origin.x: canvas.width / 2
-                xScale: root.channel === 0 ? -1 : 1
+                xScale: root.channel === 0 && root.host.settings.mirrorLeft !== false ? -1 : 1
             }
             property var amplitudes: new Array(32).fill(0)
 

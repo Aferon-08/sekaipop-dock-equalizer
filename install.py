@@ -144,12 +144,20 @@ def main():
     chrome = shell / "modules/sekai/editMode/EditChrome.qml"
     original_chrome = chrome.read_text(encoding="utf-8")
     updated_chrome = widget_registry_text(original_chrome, source, args.uninstall)
+    from settings_adapter import EDITS, transform
+    extra = []
+    for relative in EDITS:
+        path = shell / "modules/sekai" / relative
+        previous = path.read_text()
+        extra.append((path, previous, transform(previous, relative, args.uninstall)))
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     backup = state / "sekaipop/dock-equalizer-backups" / stamp
     backup.mkdir(parents=True)
     shutil.copy2(dock, backup / "Dock.qml")
     shutil.copy2(wallpaper, backup / "WallpaperLayer.qml")
     shutil.copy2(chrome, backup / "EditChrome.qml")
+    for path, previous, replacement in extra:
+        shutil.copy2(path, backup / path.name)
     if destination.exists():
         shutil.copytree(destination, backup / "plugin", symlinks=True)
 
@@ -180,6 +188,7 @@ def main():
         atomic_write(dock, updated)
         atomic_write(wallpaper, updated_wallpaper)
         atomic_write(chrome, updated_chrome)
+        for path, previous, replacement in extra: atomic_write(path, replacement)
         if not args.uninstall and not args.repair:
             data_root.mkdir(parents=True, exist_ok=True)
             reset_stage = Path(tempfile.mkdtemp(prefix=".reset-", dir=data_root))
@@ -205,6 +214,7 @@ def main():
         atomic_write(dock, original)
         atomic_write(wallpaper, original_wallpaper)
         atomic_write(chrome, original_chrome)
+        for path, previous, replacement in extra: atomic_write(path, previous)
         if mutated_plugin:
             if destination.exists():
                 shutil.rmtree(destination)

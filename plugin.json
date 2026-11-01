@@ -1,7 +1,7 @@
 {
   "id": "dock-equalizer",
   "name": "Dock Equalizer",
-  "version": "2.21.2",
+  "version": "2.22.0",
   "api": 1,
   "description": "Музыкальный док с лирикой и процедурные обои Material + стекло.",
   "icon": "graphic_eq",
@@ -25,7 +25,42 @@
     "wallpaperDensity": "auto",
     "wallpaperGlass": 0.65,
     "wallpaperRegenerate": false,
-    "wallpaperPet": true
+    "wallpaperPet": true,
+    "openDuration": 900,
+    "closeDuration": 620,
+    "spring": 1.6,
+    "fusionDuration": 850,
+    "outlineDuration": 1050,
+    "lightFade": 450,
+    "mirrorLeft": true,
+    "spectrumFade": 450,
+    "compactWidth": 480,
+    "voiceWidth": 80,
+    "voiceHeight": 28,
+    "lyricFontSize": 17,
+    "lyricFade": 240,
+    "expandDuration": 850,
+    "playerSpring": 1.2,
+    "followDelay": 190,
+    "trailDelay": 230,
+    "mistDelay": 300,
+    "orbitRadius": 23,
+    "progressAmplitude": 3.5,
+    "progressWavelength": 30,
+    "progressThickness": 3,
+    "wallpaperIntro": 4000,
+    "wallpaperMotionAmount": 1,
+    "paletteDuration": 1400,
+    "wallpaperTexture": 1280,
+    "petSpeed": 1,
+    "petSplit": true,
+    "petTwinDuration": 80,
+    "petTrailNear": 0.12,
+    "petTrailFar": 0.35,
+    "settingsDuration": 1100,
+    "settingsWidth": 1100,
+    "settingsHeight": 900,
+    "settingsScroll": 0.8
   },
   "settingsInfo": {
     "enabled": {
@@ -179,6 +214,245 @@
       "label": "Огонёк в стеклянных фигурах",
       "description": "Гуляет и танцует под музыку, иногда разделяется на двоих.",
       "group": "Процедурные обои"
+    },
+    "openDuration": {
+      "label": "Выдвижение капсул, мс",
+      "group": "Анимация",
+      "min": 200,
+      "max": 2000,
+      "step": 50
+    },
+    "closeDuration": {
+      "label": "Складывание капсул, мс",
+      "group": "Анимация",
+      "min": 150,
+      "max": 1600,
+      "step": 50
+    },
+    "spring": {
+      "label": "Пружинность капсул",
+      "group": "Анимация",
+      "min": 0,
+      "max": 3,
+      "step": 0.1
+    },
+    "fusionDuration": {
+      "label": "Слияние капсул, мс",
+      "group": "Анимация",
+      "min": 200,
+      "max": 1800,
+      "step": 50
+    },
+    "outlineDuration": {
+      "label": "Прорисовка контура, мс",
+      "group": "Анимация",
+      "min": 200,
+      "max": 2500,
+      "step": 50
+    },
+    "lightFade": {
+      "label": "Затухание бокового света, мс",
+      "group": "Анимация",
+      "min": 100,
+      "max": 1600,
+      "step": 50
+    },
+    "mirrorLeft": {
+      "label": "Отражать левую волну",
+      "group": "Звук"
+    },
+    "spectrumFade": {
+      "label": "Затухание спектра, мс",
+      "group": "Звук",
+      "min": 100,
+      "max": 1200,
+      "step": 50
+    },
+    "compactWidth": {
+      "label": "Ширина компактной лирики",
+      "group": "Лирика",
+      "min": 320,
+      "max": 700,
+      "step": 10
+    },
+    "voiceWidth": {
+      "label": "Добавочная ширина голосов",
+      "group": "Лирика",
+      "min": 0,
+      "max": 240,
+      "step": 10
+    },
+    "voiceHeight": {
+      "label": "Добавочная высота голосов",
+      "group": "Лирика",
+      "min": 0,
+      "max": 100,
+      "step": 2
+    },
+    "lyricFontSize": {
+      "label": "Размер текста лирики",
+      "group": "Лирика",
+      "min": 12,
+      "max": 26,
+      "step": 1
+    },
+    "lyricFade": {
+      "label": "Появление текста, мс",
+      "group": "Лирика",
+      "min": 0,
+      "max": 900,
+      "step": 20
+    },
+    "expandDuration": {
+      "label": "Раскрытие плеера, мс",
+      "group": "Лирика",
+      "min": 200,
+      "max": 1800,
+      "step": 50
+    },
+    "playerSpring": {
+      "label": "Пружинность плеера",
+      "group": "Лирика",
+      "min": 0,
+      "max": 3,
+      "step": 0.1
+    },
+    "followDelay": {
+      "label": "Задержка огонька, мс",
+      "group": "Свет",
+      "min": 40,
+      "max": 600,
+      "step": 10
+    },
+    "trailDelay": {
+      "label": "Инерция следа, мс",
+      "group": "Свет",
+      "min": 80,
+      "max": 700,
+      "step": 10
+    },
+    "mistDelay": {
+      "label": "Инерция рассеивания, мс",
+      "group": "Свет",
+      "min": 100,
+      "max": 1000,
+      "step": 10
+    },
+    "orbitRadius": {
+      "label": "Радиус ожидания",
+      "group": "Свет",
+      "min": 8,
+      "max": 50,
+      "step": 1
+    },
+    "progressAmplitude": {
+      "label": "Высота волны прогресса",
+      "group": "Прогресс",
+      "min": 0,
+      "max": 7,
+      "step": 0.5
+    },
+    "progressWavelength": {
+      "label": "Длина волны прогресса",
+      "group": "Прогресс",
+      "min": 12,
+      "max": 70,
+      "step": 2
+    },
+    "progressThickness": {
+      "label": "Толщина прогресса",
+      "group": "Прогресс",
+      "min": 1,
+      "max": 5,
+      "step": 0.5
+    },
+    "wallpaperIntro": {
+      "label": "Появление обоев, мс",
+      "group": "Процедурные обои",
+      "min": 1200,
+      "max": 8000,
+      "step": 100
+    },
+    "wallpaperMotionAmount": {
+      "label": "Размах движений фигур",
+      "group": "Процедурные обои",
+      "min": 0,
+      "max": 1.5,
+      "step": 0.05
+    },
+    "paletteDuration": {
+      "label": "Переход палитры, мс",
+      "group": "Процедурные обои",
+      "min": 200,
+      "max": 4000,
+      "step": 100
+    },
+    "wallpaperTexture": {
+      "label": "Разрешение стеклянной текстуры",
+      "group": "Процедурные обои",
+      "min": 640,
+      "max": 2048,
+      "step": 128
+    },
+    "petSpeed": {
+      "label": "Скорость жизни питомца",
+      "group": "Питомец",
+      "min": 0.4,
+      "max": 1.6,
+      "step": 0.05
+    },
+    "petSplit": {
+      "label": "Разделение на близнецов",
+      "group": "Питомец"
+    },
+    "petTwinDuration": {
+      "label": "Время прогулки близнецов, с",
+      "group": "Питомец",
+      "min": 30,
+      "max": 240,
+      "step": 5
+    },
+    "petTrailNear": {
+      "label": "Ближний след, с",
+      "group": "Питомец",
+      "min": 0.04,
+      "max": 0.3,
+      "step": 0.01
+    },
+    "petTrailFar": {
+      "label": "Дальний след, с",
+      "group": "Питомец",
+      "min": 0.15,
+      "max": 0.7,
+      "step": 0.01
+    },
+    "settingsDuration": {
+      "label": "Превращение телефона, мс",
+      "group": "Панель настроек",
+      "min": 600,
+      "max": 2000,
+      "step": 50
+    },
+    "settingsWidth": {
+      "label": "Ширина панели",
+      "group": "Панель настроек",
+      "min": 700,
+      "max": 1500,
+      "step": 20
+    },
+    "settingsHeight": {
+      "label": "Высота панели",
+      "group": "Панель настроек",
+      "min": 500,
+      "max": 1200,
+      "step": 20
+    },
+    "settingsScroll": {
+      "label": "Чувствительность прокрутки",
+      "group": "Панель настроек",
+      "min": 0.2,
+      "max": 2,
+      "step": 0.1
     }
   },
   "groups": [
@@ -186,6 +460,10 @@
     "Звук",
     "Анимация",
     "Лирика",
-    "Процедурные обои"
+    "Процедурные обои",
+    "Свет",
+    "Прогресс",
+    "Питомец",
+    "Панель настроек"
   ]
 }

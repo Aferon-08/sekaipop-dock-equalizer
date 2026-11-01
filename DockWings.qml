@@ -62,16 +62,16 @@ Item {
         target: root
         property: "reveal"
         to: 1
-        duration: 900
+        duration: root.host.settings.openDuration ?? 900
         easing.type: Easing.OutBack
-        easing.overshoot: 1.6
+        easing.overshoot: root.host.settings.spring ?? 1.6
     }
     NumberAnimation {
         id: closing
         target: root
         property: "reveal"
         to: 0
-        duration: 620
+        duration: root.host.settings.closeDuration ?? 620
         easing.type: Easing.InOutCubic
     }
     Timer {
@@ -86,7 +86,7 @@ Item {
     property real fusion: 0
     property real outline: 0
     property real edgeLight: host.working && lyricLayer.playing ? 1 : 0
-    Behavior on edgeLight { NumberAnimation { duration: 450; easing.type: Easing.OutCubic } }
+    Behavior on edgeLight { NumberAnimation { duration: root.host.settings.lightFade ?? 450; easing.type: Easing.OutCubic } }
     function animateFusion() {
         fuseOpen.stop(); fuseClose.stop(); traceDraw.stop(); traceFade.stop(); contact.stop()
         if (wantsFusion) {
@@ -97,10 +97,10 @@ Item {
         }
     }
     onWantsFusionChanged: if (motionReady) animateFusion()
-    NumberAnimation { id: fuseOpen; target: root; property: "fusion"; to: 1; duration: 850; easing.type: Easing.InOutCubic }
+    NumberAnimation { id: fuseOpen; target: root; property: "fusion"; to: 1; duration: root.host.settings.fusionDuration ?? 850; easing.type: Easing.InOutCubic }
     NumberAnimation { id: fuseClose; target: root; property: "fusion"; to: 0; duration: 800; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
     Timer { id: contact; interval: 350; onTriggered: { traceDraw.from = root.outline; traceDraw.start() } }
-    NumberAnimation { id: traceDraw; target: root; property: "outline"; to: 1; duration: 1050; easing.type: Easing.OutCubic }
+    NumberAnimation { id: traceDraw; target: root; property: "outline"; to: 1; duration: root.host.settings.outlineDuration ?? 1050; easing.type: Easing.OutCubic }
     NumberAnimation { id: traceFade; target: root; property: "outline"; to: 0; duration: 260; easing.type: Easing.InOutCubic }
     function levels(offset) {
         const a = host.working && host.service && host.service.playing ? host.service.bands : []

@@ -43,11 +43,12 @@ QtObject {
  property Connections sceneSignals:Connections {target:root.scene;function onLayoutChanged(){root.reset()}}
  function tick(dt){
   const oldPoints=targetPoints.slice(),oldCarriers=targetCarriers.slice()
-  const s=Pet.advance(state,dt,glass,!!music?.playing,Number(music?.beatPulse)||0,Number(music?.beatBpm)||0,scene.layout.network,plastics,{asynchronous:true,height:scene.height,bounds:scene.layout.network.bounds,widgets:(scene.widgetAreas || []).map(r=>({x:r.x/scene.height,y:r.y/scene.height,width:r.width/scene.height,height:r.height/scene.height}))})
+  state.splitEnabled=scene.settings.petSplit!==false;state.twinDuration=scene.settings.petTwinDuration ?? 80
+  const s=Pet.advance(state,dt*(scene.settings.petSpeed ?? 1),glass,!!music?.playing,Number(music?.beatPulse)||0,Number(music?.beatBpm)||0,scene.layout.network,plastics,{asynchronous:true,height:scene.height,bounds:scene.layout.network.bounds,widgets:(scene.widgetAreas || []).map(r=>({x:r.x/scene.height,y:r.y/scene.height,width:r.width/scene.height,height:r.height/scene.height}))})
   if(planner.ready)for(const request of Pet.requests(s))planner.sendMessage(Object.assign({},request,{generation:generation}))
   fromPoints=oldPoints;fromCarriers=oldCarriers;targetCarriers=s.children?(s.carriers||[]):s.carrier?[Object.assign({},s.carrier,{actorIndex:0})]:[]
   impacts=s.impacts.slice();targetPoints=s.points.slice();blend=0
-  near=[Pet.delayedTime(s,.12,0),Pet.delayedTime(s,.12,1)];far=[Pet.delayedTime(s,.35,0),Pet.delayedTime(s,.35,1)]
+  near=[Pet.delayedTime(s,scene.settings.petTrailNear ?? .12,0),Pet.delayedTime(s,scene.settings.petTrailNear ?? .12,1)];far=[Pet.delayedTime(s,scene.settings.petTrailFar ?? .35,0),Pet.delayedTime(s,scene.settings.petTrailFar ?? .35,1)]
 
  }
  property Timer clock:Timer {

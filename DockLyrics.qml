@@ -195,17 +195,17 @@ Item {
     readonly property real musicLayout: Math.max(0, Math.min(1, musicReveal))
     property real voiceExpansion: multiVoiceAvailable ? 1 : 0
     Behavior on voiceExpansion { NumberAnimation { duration: 480; easing.type: Easing.OutCubic } }
-    readonly property real expandedWidth: Math.min((host.settings.lyricsWidth || 560) + 80 * voiceExpansion, maxBody)
-    readonly property real targetWidth: Math.min(480, maxBody) + (expandedWidth - Math.min(480, maxBody)) * layout
+    readonly property real expandedWidth: Math.min((host.settings.lyricsWidth || 560) + (host.settings.voiceWidth ?? 80) * voiceExpansion, maxBody)
+    readonly property real targetWidth: Math.min(host.settings.compactWidth ?? 480, maxBody) + (expandedWidth - Math.min(host.settings.compactWidth ?? 480, maxBody)) * layout
     // Signed deltas let a long native dock contract to the reference proportions.
     readonly property real extraWidth: (targetWidth - baseWidth) * musicLayout
-    readonly property real extraHeight: (76 - baseHeight) * musicLayout + (136 + 28 * voiceExpansion) * layout
+    readonly property real extraHeight: (76 - baseHeight) * musicLayout + (136 + (host.settings.voiceHeight ?? 28) * voiceExpansion) * layout
     readonly property real headerHeight: Math.max(100 * layout, swipeEnabled ? 14 : 0)
     readonly property real iconsOffset: 84 * layout
     readonly property real iconsScale: 1 - (1 - Math.min(1,
         Math.max(1, dock.capWidth - 48) / Math.max(1, baseWidth - 36))) * Math.min(1, layout)
     property real lyricsOpacity: wantsMusic && !host.dock.hovered ? 1 : 0
-    Behavior on lyricsOpacity { NumberAnimation { duration: 240; easing.type: Easing.InOutCubic } }
+    Behavior on lyricsOpacity { NumberAnimation { duration: root.host.settings.lyricFade ?? 240; easing.type: Easing.InOutCubic } }
 
     function animateLayout() {
         if (!ready) return
@@ -216,7 +216,7 @@ Item {
         animation.start()
     }
     onWideChanged: animateLayout()
-    NumberAnimation { id: widen; target: root; property: "wideReveal"; to: 1; duration: 850; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
+    NumberAnimation { id: widen; target: root; property: "wideReveal"; to: 1; duration: root.host.settings.expandDuration ?? 850; easing.type: Easing.OutBack; easing.overshoot: root.host.settings.playerSpring ?? 1.2 }
     NumberAnimation { id: narrow; target: root; property: "wideReveal"; to: 0; duration: 600; easing.type: Easing.InOutCubic }
 
     property var clock: LM.clockReset(0, Date.now())
@@ -332,8 +332,8 @@ Item {
         const orbit = waitingLightAmount
         const centerX = reel.x + reel.width / 2
         const centerY = reel.y + reel.height / 2 + (reel.currentIndex - reel.cursor) * 30
-        const x = centerX + Math.cos(waitingLightAngle) * 23
-        const y = centerY + Math.sin(waitingLightAngle) * 23
+        const x = centerX + Math.cos(waitingLightAngle) * (host.settings.orbitRadius ?? 23)
+        const y = centerY + Math.sin(waitingLightAngle) * (host.settings.orbitRadius ?? 23)
         const markerX = reel.x + reel.markerPose.x
         const markerY = reel.y + reel.markerPose.y + 15
         const followX = markerX + (x - markerX) * orbit
@@ -349,10 +349,10 @@ Item {
     Behavior on wordLight {
         enabled: root.ready && (root.playing || root.ambientBlend > 0.001)
             && Math.abs(root.wordLightTarget.x - root.wordLight.x) < 180
-        Vector3dAnimation { duration: 190; easing.type: Easing.OutCubic }
+        Vector3dAnimation { duration: root.host.settings.followDelay ?? 190; easing.type: Easing.OutCubic }
     }
-    Behavior on wordLightTail { Vector3dAnimation { duration: root.waitingLightAmount > 0.5 ? 320 : 230; easing.type: Easing.OutCubic } }
-    Behavior on wordLightMist { Vector3dAnimation { duration: root.waitingLightAmount > 0.5 ? 420 : 300; easing.type: Easing.OutCubic } }
+    Behavior on wordLightTail { Vector3dAnimation { duration: root.waitingLightAmount > 0.5 ? 320 : (root.host.settings.trailDelay ?? 230); easing.type: Easing.OutCubic } }
+    Behavior on wordLightMist { Vector3dAnimation { duration: root.waitingLightAmount > 0.5 ? 420 : (root.host.settings.mistDelay ?? 300); easing.type: Easing.OutCubic } }
     readonly property var dock: host.dock.item
     IpcHandler {
         target: "docklyrics-" + (root.host.dock.screenName || "preview")
@@ -512,6 +512,9 @@ Item {
         }
     }
     WavyProgress {
+        amplitude: root.host.settings.progressAmplitude ?? 3.5
+        wavelength: root.host.settings.progressWavelength ?? 30
+        thickness: root.host.settings.progressThickness ?? 3
         id: progress
         x: 68 + 14 * Math.min(1, root.layout)
         y: 45 + 18 * Math.min(1, root.layout)
@@ -688,7 +691,7 @@ Item {
         duration: root.duration
         time: root.lyricTime
         playing: root.playing
-        pixelSize: 16 + Math.min(1, root.layout)
+        pixelSize: (root.host.settings.lyricFontSize ?? 17) - 1 + Math.min(1, root.layout)
         ink: root.colors.ink
         accent: root.colors.accent
         upperContextOpacity: singleBacking.active ? .1 : 1
@@ -726,7 +729,7 @@ Item {
         objectName: "lyricsFinale"
         x: reel.x; y: reel.y; width: reel.width; height: reel.height
         fontFamily: root.host.theme.fontFamily
-        pixelSize: 16+Math.min(1,root.layout)
+        pixelSize: (root.host.settings.lyricFontSize ?? 17)-1+Math.min(1,root.layout)
         ink: root.colors.ink; accent: root.colors.accent
         phase: root.finaleState.phase
         opacity: root.lyricsEnded && !root.multiVoiceActive ? root.lyricsOpacity : 0

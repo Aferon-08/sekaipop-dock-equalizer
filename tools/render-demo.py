@@ -3,14 +3,14 @@
 import argparse, os, shutil, subprocess, tempfile
 from pathlib import Path
 parser=argparse.ArgumentParser(description=__doc__)
-parser.add_argument("scene",choices=["dock","wallpaper","voices"])
+parser.add_argument("scene",choices=["dock","wallpaper","voices","settings"])
 parser.add_argument("output",type=Path)
 args=parser.parse_args();root=Path(__file__).resolve().parent.parent
 args.output.mkdir(parents=True,exist_ok=True)
 with tempfile.TemporaryDirectory(prefix="sekaipop-demo-") as d:
  stage=Path(d)
  for p in root.iterdir():
-  if p.suffix in (".qml",".js",".mjs",".qsb") or p.name=="assets":
+  if p.suffix in (".qml",".js",".mjs",".qsb") or p.name in ("assets","plugin.json"):
    if p.is_dir():shutil.copytree(p,stage/p.name)
    else:shutil.copy2(p,stage/p.name)
  text=(root/"tools"/("demo-"+args.scene+".qml")).read_text().replace('import ".." as Plugin','import "." as Plugin').replace('import "../WallpaperPet.js"','import "WallpaperPet.js"')

@@ -255,7 +255,7 @@ function advance(s,dt,shapes,playing,beat,bpm,network,walls,context){
   s.motors=[Motion.create(p)]
  }
  if(!s.trip){s.stamina=Math.min(1,s.stamina+dt*(s.play==="rest"?.045:.012))}
- if(!s.isChild && s.mode==="single" && !s.trip && !s.pendingPlan && s.time>=s.nextSplit)beginSplit(s,shapes)
+ if(s.splitEnabled!==false && !s.isChild && s.mode==="single" && !s.trip && !s.pendingPlan && s.time>=s.nextSplit)beginSplit(s,shapes)
  if(!context.gatherTarget && !context.playTarget && s.mode==="single" && !s.trip && s.time>=s.nextTrip && (s.journey || s.time>=s.nextGoal))startTrip(s,shapes,network,walls,context)
  let poses=[],trip=s.trip
  if(trip && trip.kind==="bubble"){
@@ -352,7 +352,7 @@ function delayedTime(s,seconds,index){
 }
 
 function spawnFamily(s){
- s.carriers=[];s.familyPhase="greet";s.reunionHome=s.splitHome;s.familyAge=0;s.roamUntil=70+random(s)*20
+ s.carriers=[];s.familyPhase="greet";s.reunionHome=s.splitHome;s.familyAge=0;s.roamUntil=(s.twinDuration ?? 80)-10+random(s)*20
  s.children=s.points.map((point,index)=>{
   const child=create("family:"+s.rng+":"+s.familySerial+":"+index)
   child.actorId=s.familySerial+":"+index;child.isChild=true;child.home=s.splitHome;child.returnHome=s.splitHome;child.breadcrumbs=[]
