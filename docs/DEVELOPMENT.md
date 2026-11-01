@@ -7,6 +7,7 @@
 | Файлы | Роль |
 |---|---|
 | `plugin.json`, `Widget.qml`, `Service.qml` | Манифест API 1, вспомогательный виджет и общий аудио/ритм/тайминг-сервис. |
+| `SettingsPanel.qml`, `SettingsControl.qml`, `settings_adapter.py` | Стеклянная панель, управление параметрами и два подключения к телефону. |
 | `install.py`, `*-adapter.qml`, `*_adapter.py` | Проверяемые обратимые подключения в оболочку, резервирование и откат. |
 | `DockWings.qml`, `DockLyrics.qml`, `VisualizerCapsule.qml` | Жидкая форма дока, компоновка плеера и спектр. |
 | `Lyrics*`, `KaraokeLine.qml`, `Marker*`, `Firefly*`, `MultiVoice*`, `Backing*` | Текст, точки, огоньки, голоса и финальные состояния. |
