@@ -4,7 +4,13 @@
 
 [Русский](README.md) · [Installation](docs/INSTALL.md) · [Releases](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases)
 
-An independent extension for **[SekaiPOP](https://github.com/Blapples/SekaiPop)** on Hyprland: a liquid music dock, word-timed lyrics and procedural glass wallpapers with a tiny firefly companion. **Version 2.22.0 · GPL-3.0.** The settings UI and detailed documentation are currently primarily in Russian.
+An independent extension for **[SekaiPOP](https://github.com/Blapples/SekaiPop)** on Hyprland: a liquid music dock, word-timed lyrics and procedural glass wallpapers with a tiny firefly companion. **Version 2.23.0 · GPL-3.0.** The settings UI and detailed documentation are currently primarily in Russian.
+
+## 2.23.0 — Configurable dock glass
+
+The **Dock glass** settings group adds a master switch and controls for opacity, refraction, lyric frost/darkening and reactive-light brightness. Switching it off releases window-capture sources and retains your tuned values. There are 61 settings in total. [Settings catalogue](docs/SETTINGS.md).
+
+This branch retains `install.py --repair`. The separate [native API preview](https://github.com/Aferon-08/sekaipop-dock-equalizer/tree/codex/native-extensions) requires a shell patch.
 
 ![Music dock demo](docs/media/dock.gif)
 
@@ -18,9 +24,9 @@ These are recordings of the real QML components in a controlled demo scene, usin
 
 The multi-voice demo uses explicitly tagged sample data; it demonstrates the UI, not automatic voice-recognition accuracy. [Video](docs/media/voices.mp4).
 
-## 2.22.0 — Liquid settings panel
+## Liquid settings panel
 
-**55 settings**, search, smooth scrolling and per-setting / confirmed full reset. The phone morphs through an irregular glass droplet into a taller settings panel, then returns on Back or Escape. [Settings catalogue (RU)](docs/SETTINGS.md).
+**61 settings**, search, smooth scrolling and per-setting / confirmed full reset. The phone morphs through an irregular glass droplet into a taller settings panel, then returns on Back or Escape. [Settings catalogue (RU)](docs/SETTINGS.md).
 
 ![Liquid settings panel](docs/media/settings.gif)
 

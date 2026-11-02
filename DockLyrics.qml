@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "DockMaterial.js" as Material
 import QtQuick.Effects
 import QtQuick.Controls as Controls
 import Quickshell.Widgets
@@ -16,6 +17,8 @@ import "MultiVoiceMath.js" as Voices
 Item {
     id: root
     property var glassSource: null
+    readonly property var material: Material.read(host.settings)
+    readonly property vector4d materialStyle: Qt.vector4d(material.enabled ? 1 : 0, material.blur, material.darkening, material.refraction)
     property rect glassRect: Qt.rect(0, 0, 1, 1)
     required property var host
     readonly property var media: host.dock.mediaSource || null
@@ -671,12 +674,13 @@ Item {
             property vector2d resolution: Qt.vector2d(width, height)
             property color tintColor: root.colors.module
             property color highlightColor: root.colors.ink
+            property vector4d materialStyle: root.materialStyle
             fragmentShader: Qt.resolvedUrl("glass.frag.qsb")
             visible: !root.multiVoiceActive && !!root.glassSource && status !== ShaderEffect.Error
         }
         Rectangle {
             anchors.fill: parent; radius: 26
-            color: Qt.rgba(root.colors.module.r, root.colors.module.g, root.colors.module.b, 0.4)
+            color: Qt.rgba(root.colors.module.r, root.colors.module.g, root.colors.module.b, root.material.enabled ? 0.4 : 1)
             visible: !root.multiVoiceActive && !glass.visible
         }
     }
@@ -689,8 +693,9 @@ Item {
         theme: root.host.theme
         lines: root.lines
         duration: root.duration
-        time: root.lyricTime
-        playing: root.playing
+        rendering: root.available && !root.multiVoiceActive && !root.lyricsEnded
+        time: rendering ? root.lyricTime : 0
+        playing: rendering && root.playing
         pixelSize: (root.host.settings.lyricFontSize ?? 17) - 1 + Math.min(1, root.layout)
         ink: root.colors.ink
         accent: root.colors.accent
@@ -700,7 +705,7 @@ Item {
     BackingLayer {
         id: singleBacking
         x:reel.x;y:reel.y;width:reel.width;height:reel.height
-        lines:root.allLines.filter(l=>l.role==="backing");time:root.lyricTime
+        lines:root.allLines.filter(l=>l.role==="backing");time:visible?root.lyricTime:0
         opacity:root.available && !root.multiVoiceActive && !root.lyricsEnded ? root.lyricsOpacity : 0
         visible:opacity>.001
         fontFamily:root.host.theme.fontFamily;pixelSize:12
@@ -721,6 +726,7 @@ Item {
         theme: root.host.theme
         ink: root.colors.ink; accent: root.colors.accent; moduleColor: root.colors.module
         glassSource: root.glassSource
+        materialStyle: root.materialStyle
         glassRect: Qt.rect(root.glassRect.x + 8, root.glassRect.y + 8, width, height)
         opacity: root.multiVoiceActive && root.available ? root.lyricsOpacity : 0
         visible: opacity > 0.001

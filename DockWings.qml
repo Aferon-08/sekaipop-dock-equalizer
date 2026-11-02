@@ -1,11 +1,14 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "DockMaterial.js" as Material
 
 // One distance field joins the dock and both droplets without interior seams.
 // Only the housing changes shape; dock keys remain sharp and interactive.
 Item {
     id: root
     required property var host
+    readonly property var material: Material.read(host.settings)
+    FrameAnimation {running:!!root.host.service && !!root.host.service.profileFrames;onTriggered:root.host.service.collectFrame(root.host.dock.screenName,frameTime)}
     readonly property var dock: host.dock.item
     readonly property bool vertical: host.dock.vertical
     readonly property real bodyWidth: dock.capWidth
@@ -86,6 +89,11 @@ Item {
     property real fusion: 0
     property real outline: 0
     property real edgeLight: host.working && lyricLayer.playing ? 1 : 0
+    property real lightClock: 0
+    FrameAnimation {
+        running: root.visible && root.edgeLight > 0.001 && (root.phase > 0.01 || root.fusion > 0.001)
+        onTriggered: root.lightClock += Math.min(frameTime, 0.05)
+    }
     Behavior on edgeLight { NumberAnimation { duration: root.host.settings.lightFade ?? 450; easing.type: Easing.OutCubic } }
     function animateFusion() {
         fuseOpen.stop(); fuseClose.stop(); traceDraw.stop(); traceFade.stop(); contact.stop()
@@ -112,7 +120,9 @@ Item {
                 const value = (a[offset + group * 10 + i] || 0) / 1000
                 sum += value * value
             }
-            result.push(Math.min(1, Math.sqrt(sum / 10) * gain))
+            const rms = Math.sqrt(sum / 10) * gain
+            // A soft knee raises low-volume passages; exact silence stays dark.
+            result.push(Math.pow(Math.min(1, Math.max(0, rms - 0.003) * 2.4), 0.6))
         }
         return Qt.vector3d(result[0], result[1], result[2])
     }
@@ -123,8 +133,9 @@ Item {
     readonly property color lightPrimary: colors.accent
     readonly property color lightSecondary: host.theme.accentMint || colors.ink
     readonly property color lightTertiary: Qt.tint(lightSecondary,
-        Qt.rgba(colors.ink.r, colors.ink.g, colors.ink.b, 0.4))
+        Qt.rgba(colors.ink.r, colors.ink.g, colors.ink.b, 0.12))
     // Leave room for the opening overshoot, so the spring never hits a clamp.
+    // Compact capsules flow into the player; their expanded counterpart is light.
     readonly property real phase: Math.max(0, Math.min(1.1, reveal * (1 - fusion)))
     readonly property real dropletLength: thickness + (length - thickness) * phase
     readonly property real radius: host.dock.radius + (40 - host.dock.radius) * lyricLayer.musicLayout
@@ -140,6 +151,7 @@ Item {
     readonly property real iconsScale: lyricLayer.iconsScale
     readonly property bool suppressMediaKey: lyricLayer.wide
     readonly property real iconsOpacity: 1 - lyricLayer.lyricsOpacity
+    readonly property real glassAmount: material.enabled ? Math.min(1, Math.max(phase, lyricLayer.musicLayout)) : 0
 
     visible: host.settings.enabled && fits && !host.dock.asleep
 
@@ -150,6 +162,29 @@ Item {
         x: root.dock.x + root.bodyWidth / 2 - width / 2 + lyricLayer.swipeX
         y: root.dock.y + root.bodyHeight / 2 - height / 2 + lyricLayer.swipeY
         rotation: root.vertical ? 90 : 0
+
+        SettingsUnderlay {
+            id: dockUnderlay
+            anchors.fill: parent
+            screenName: root.host.dock.screenName || ""
+            // mapToGlobal accounts for the native dock's slide/lift and screen.
+            readonly property point origin: {
+                const dependency = liquid.x + liquid.y + root.dock.x + root.dock.y
+                return liquid.mapToGlobal(0, 0)
+            }
+            viewport: Qt.rect(origin.x - (monitor?.lastIpcObject?.x || 0),
+                origin.y - (monitor?.lastIpcObject?.y || 0), width, height)
+            intersectOnly: true
+            refreshInterval: 125
+            active: root.visible && root.glassAmount > 0.001 && !root.vertical
+        }
+        ShaderEffectSource {
+            id: dockBackdrop
+            sourceItem: dockUnderlay
+            hideSource: true
+            live: dockUnderlay.active
+            visible: false
+        }
 
         ShaderEffect {
             id: skin
@@ -167,7 +202,11 @@ Item {
             readonly property vector4d skinStyle: Qt.vector4d(root.colors.border,
                 root.colors.ringWidth, root.host.dock.look === "transparent" ? 0 : 1,
                 root.vertical ? 1 : 0)
-            readonly property vector4d lightData: Qt.vector4d(Math.max(0, Math.min(1, root.fusion)), root.outline, lyricLayer.waitingLightAmount, root.edgeLight)
+            readonly property vector4d lightData: Qt.vector4d(Math.max(0, Math.min(1, root.fusion)), root.outline, lyricLayer.waitingLightAmount, root.edgeLight * root.material.light)
+            readonly property real lightClock: root.lightClock
+            readonly property real glassAmount: root.glassAmount
+            readonly property vector2d materialStyle: Qt.vector2d(root.material.opacity, root.material.refraction)
+            readonly property var backdrop: dockBackdrop
             readonly property vector4d leftAudio: Qt.vector4d(root.leftLevels.x, root.leftLevels.y, root.leftLevels.z, 0)
             readonly property vector4d rightAudio: Qt.vector4d(root.rightLevels.x, root.rightLevels.y, root.rightLevels.z, 0)
             readonly property color lightPrimary: root.lightPrimary

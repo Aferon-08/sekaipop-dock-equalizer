@@ -13,6 +13,8 @@ Item {
     required property var theme
     property var document: null
     property real lyricTime: 0
+    readonly property bool rendering: visible && opacity>.001
+    readonly property real displayTime: rendering ? lyricTime : 0
     property real duration: document && document.duration ? document.duration : 0
     property bool playing: false
     property bool allowFinale: true
@@ -26,6 +28,7 @@ Item {
     property var glassSource: null
     property rect glassRect: Qt.rect(0, 0, width, height)
     property bool showGlass: true
+    property vector4d materialStyle: Qt.vector4d(1,3.8,0.23,1)
     property real regionGap: 8
     property real transitionDuration: 0.42
     readonly property var voices: Voices.normalize(document)
@@ -44,7 +47,7 @@ Item {
         let event=topologyEvents[0]
         for(const e of topologyEvents){if(e.t>stamp)break;event=e}
         const result=[]
-        if(!event)return result
+        if(!rendering || !event)return result
         const ending=allowFinale && lyricTime>=Finale.finish(endBounds)
         const layout=ending?regions:event.regions
         for(let i=0;i<layout.length;++i){
@@ -63,6 +66,7 @@ Item {
         return result
     }
     onLyricTimeChanged: {
+        if(!rendering)return
         if(lyricTime<lastTime-.05 || lyricTime>lastTime+.7)resetFlights()
         lastTime=lyricTime
     }
@@ -113,13 +117,15 @@ Item {
             required property int index
             readonly property var voice: root.voices[index]
             readonly property var region: root.regions[index] || ({ x: 0, width: 0, opacity: 0, owner: index })
-            readonly property var finale: Finale.state(root.voices,region.members || [index],root.document,
-                root.lyricTime,root.duration,root.allowFinale)
+            readonly property string memberKey:(region.members || [index]).join(",")
+            readonly property var memberIndexes:memberKey.split(",").map(Number)
+            readonly property var finaleBounds:Finale.boundsFor(root.voices,memberIndexes,root.document,root.duration)
+            readonly property var finale:Finale.forBounds(finaleBounds,root.displayTime,root.duration,root.allowFinale)
             readonly property color voiceAccent: voice.color || root.accent
             property alias reel: voiceReel
             readonly property var backingLines: root.document && root.document.lines
-                ? BackingLayout.forMembers(root.document.lines,root.voices,region.members || [index]) : []
-            readonly property bool backingActive: backingLines.some(l=>root.lyricTime>=l.t && root.lyricTime<l.end+.4)
+                ? BackingLayout.forMembers(root.document.lines,root.voices,memberIndexes) : []
+            readonly property bool backingActive: backingLines.some(l=>root.displayTime>=l.t && root.displayTime<l.end+.4)
             function glowPose(stamp) {
                 if(finale.ended) {
                     const t=LightMotion.motionTime(Math.max(0,stamp)+panel.index*1.7)
@@ -167,13 +173,14 @@ Item {
                 property vector2d resolution: Qt.vector2d(width, height)
                 property color tintColor: root.moduleColor
                 property color highlightColor: panel.voiceAccent
+                property vector4d materialStyle: root.materialStyle
                 fragmentShader: Qt.resolvedUrl("glass.frag.qsb")
                 visible: root.showGlass && !!root.glassSource && GraphicsInfo.api !== GraphicsInfo.Software && status !== ShaderEffect.Error
             }
             Rectangle {
                 anchors.fill: parent
                 radius: Math.min(26, width / 2, height / 2)
-                color: Qt.rgba(root.moduleColor.r, root.moduleColor.g, root.moduleColor.b, 0.42)
+                color: Qt.rgba(root.moduleColor.r, root.moduleColor.g, root.moduleColor.b, root.materialStyle.x > 0.5 ? 0.42 : 1)
                 border.width: 0.7
                 border.color: Qt.rgba(panel.voiceAccent.r, panel.voiceAccent.g, panel.voiceAccent.b, 0.15)
                 visible: root.showGlass && !glass.visible
@@ -184,11 +191,11 @@ Item {
                 x: voiceReel.x; y: voiceReel.y
                 width: voiceReel.width; height: voiceReel.height
                 objectName: "voiceGlow"
-                pose: panel.glowPose(root.lyricTime - 0.065)
-                nearPose: panel.glowPose(root.lyricTime - (voiceReel.waiting ? 0.24 : 0.115))
-                farPose: panel.glowPose(root.lyricTime - (voiceReel.waiting ? 0.44 : 0.225))
+                pose: panel.glowPose(root.displayTime - 0.065)
+                nearPose: panel.glowPose(root.displayTime - (voiceReel.waiting ? 0.24 : 0.115))
+                farPose: panel.glowPose(root.displayTime - (voiceReel.waiting ? 0.44 : 0.225))
                 poolWidth: Math.min(124, Math.max(65, panel.width * 0.65))
-                scale: 1 + .025*Math.sin(root.lyricTime*1.7+panel.index) + root.beatPulse*.04
+                scale: 1 + .025*Math.sin(root.displayTime*1.7+panel.index) + root.beatPulse*.04
                 intensity: .9 + root.beatPulse*.18 + root.heartPulse*.1
                 poolHeight: 62
                 accent: panel.voiceAccent
@@ -217,7 +224,7 @@ Item {
             }
             BackingLayer {
                 anchors.fill: parent
-                lines: panel.backingLines;time:root.lyricTime
+                lines: panel.backingLines;time:panel.visible ? root.displayTime:0
                 amount:1-panel.finale.amount
                 fontFamily:root.theme.fontFamily;pixelSize:root.pixelSize*.72
                 accent:panel.voiceAccent;z:2
@@ -232,8 +239,9 @@ Item {
                 theme: root.theme
                 lines: panel.voice.lines
                 duration: root.duration
-                time: root.lyricTime
-                playing: root.playing
+                rendering: panel.visible && root.rendering
+                time: rendering ? root.displayTime : 0
+                playing: rendering && root.playing
                 upperContextOpacity: panel.backingActive ? .05 : 1
                 Behavior on upperContextOpacity {NumberAnimation{duration:180}}
                 pixelSize: root.pixelSize

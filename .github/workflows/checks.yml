@@ -25,3 +25,9 @@ jobs:
         run: node tests/tube-and-family.mjs
       - name: Independent bubble carriers and plastic wall
         run: node tests/bubble-family.mjs
+      - name: Settings liquid transition geometry
+        run: node tests/settings-motion.mjs
+      - name: Cached lyric finale
+        run: node tests/finale-cache.mjs
+      - name: Dock glass controls and retained customization
+        run: node tests/dock-material.mjs

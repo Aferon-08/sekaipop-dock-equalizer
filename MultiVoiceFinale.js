@@ -21,14 +21,18 @@ function regions(events,time,width,gap,transition,bounds) {
         first:visible[0],last:visible[visible.length-1],members:visible
     }))
 }
-function state(voices,members,document,time,duration,enabled) {
+function boundsFor(voices,members,document,duration) {
     const ids=(members || []).map(i=>voices[i] && voices[i].id)
     let lines=[]
     for(const i of (members || []))if(voices[i])lines=lines.concat(voices[i].lines)
     // Short backing phrases belong to the host's branch and must finish too.
     lines=lines.concat(((document || {}).lines || []).filter(l=>l.role==='backing' && ids.indexOf(l.hostVoiceId)>=0))
-    const bounds=End.bounds(lines,duration)
+    return End.bounds(lines,duration)
+}
+function forBounds(bounds,time,duration,enabled) {
     const frame=End.frame(bounds,time,duration,enabled?null:{timelineComplete:false})
     return {ended:frame.ended,phase:frame.phase,
         amount:frame.ended?Voices.smooth((time-finish(bounds))/.45):0}
 }
+
+function state(voices,members,document,time,duration,enabled) {return forBounds(boundsFor(voices,members,document,duration),time,duration,enabled)}
