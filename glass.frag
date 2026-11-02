@@ -45,12 +45,9 @@ void main() {
     float transmission = 0.58;
     float alpha = coating + scene.a * transmission * (1.0-coating);
     vec3 surface = tintColor.rgb * coating + scene.rgb * transmission * (1.0-coating);
-    float edge = 1.0 - smoothstep(0.45, 1.3, abs(d + 0.65));
     float specular = pow(max(0.0, dot(n, normalize(vec2(-0.55, -1.0)))), 3.0);
-    float rim = edge * (0.035 + specular * 0.14);
-    surface = highlightColor.rgb * rim + surface * (1.0-rim);
-    alpha = rim + alpha * (1.0-rim);
-    surface += highlightColor.rgb * bevel * 0.016 * specular;
+    // Broad, subtle reflection rather than a separate hard outline around lyrics.
+    surface += highlightColor.rgb * bevel * 0.006 * specular;
     // Sample only the housing: text and karaoke remain a sharp overlay.
     fragColor = vec4(min(surface,vec3(alpha)), alpha) * mask * qt_Opacity;
 }

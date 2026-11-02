@@ -25,7 +25,6 @@ layout(std140, binding = 0) uniform buf {
     vec2 glowBreath;
     float heartPulse;
     float lightClock;
-    vec4 lyricCutout;
     float glassAmount;
     vec2 materialStyle;
 };
@@ -177,11 +176,8 @@ void main() {
     if (lightData.x > 0.001) {
         float mainDistance = roundedBox(p, dockRect.xy + dockRect.zw * 0.5, dockRect.zw, params.y);
         float mainCover = 1.0 - smoothstep(-aa, aa, mainDistance);
-        float cutoutD = roundedBox(p,lyricCutout.xy+lyricCutout.zw*0.5,
-            lyricCutout.zw,26.0);
-        float opaqueZone = smoothstep(-1.0,2.0,cutoutD);
         vec3 light = (sideLight(p,false)+sideLight(p,true)+bottomLight(p))
-            *lightData.w*opaqueZone + lyricLight(p);
+            *lightData.w + lyricLight(p);
         // Stronger under-glass light; only a tight, faint spill outside.
         float outer = exp(-pow(max(0.0, mainDistance) / 12.5, 1.5));
         float lightMask = lightData.x * 0.95 * mainCover;

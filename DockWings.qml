@@ -207,9 +207,6 @@ Item {
             readonly property real glassAmount: root.glassAmount
             readonly property vector2d materialStyle: Qt.vector2d(root.material.opacity, root.material.refraction)
             readonly property var backdrop: dockBackdrop
-            readonly property vector4d lyricCutout: Qt.vector4d(root.host.dock.look === "transparent" ? 0 :
-                (width - root.bodyAlong) / 2 + 16, root.pad + 93,
-                Math.max(1, root.bodyAlong - 32), root.host.dock.look === "transparent" ? 0 : 110 + 28 * lyricLayer.voiceExpansion)
             readonly property vector4d leftAudio: Qt.vector4d(root.leftLevels.x, root.leftLevels.y, root.leftLevels.z, 0)
             readonly property vector4d rightAudio: Qt.vector4d(root.rightLevels.x, root.rightLevels.y, root.rightLevels.z, 0)
             readonly property color lightPrimary: root.lightPrimary

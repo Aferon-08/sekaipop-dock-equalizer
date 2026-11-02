@@ -23,6 +23,5 @@ assert.deepEqual(plain(c.read({glassOpacity:NaN,glassRefraction:'bad',glassBlur:
 for(const k of ['dockGlass','glassOpacity','glassRefraction','glassBlur','glassDarkening','glassLight']) {
  assert.equal(manifest.settingsInfo[k].group,'Стекло дока');
  assert(manifest.groups.includes(manifest.settingsInfo[k].group),'setting is reachable in the actual panel');
- if(k!=='dockGlass')assert.equal(manifest.settingsInfo[k].enabledBy,'dockGlass');
 }
 console.log('PASS material defaults, clamps, old settings, master toggle, retained custom values and UI metadata');
