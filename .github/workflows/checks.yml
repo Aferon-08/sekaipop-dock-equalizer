@@ -31,6 +31,8 @@ jobs:
         run: python tests/installer.py
       - name: Cached lyric finale
         run: node tests/finale-cache.mjs
+      - name: Dock glass controls and retained customization
+        run: node tests/dock-material.mjs
       - uses: actions/checkout@v4
         with:
           repository: Blapples/SekaiPop

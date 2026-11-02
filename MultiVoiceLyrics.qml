@@ -28,6 +28,7 @@ Item {
     property var glassSource: null
     property rect glassRect: Qt.rect(0, 0, width, height)
     property bool showGlass: true
+    property vector4d materialStyle: Qt.vector4d(1,3.8,0.23,1)
     property real regionGap: 8
     property real transitionDuration: 0.42
     readonly property var voices: Voices.normalize(document)
@@ -172,13 +173,14 @@ Item {
                 property vector2d resolution: Qt.vector2d(width, height)
                 property color tintColor: root.moduleColor
                 property color highlightColor: panel.voiceAccent
+                property vector4d materialStyle: root.materialStyle
                 fragmentShader: Qt.resolvedUrl("glass.frag.qsb")
                 visible: root.showGlass && !!root.glassSource && GraphicsInfo.api !== GraphicsInfo.Software && status !== ShaderEffect.Error
             }
             Rectangle {
                 anchors.fill: parent
                 radius: Math.min(26, width / 2, height / 2)
-                color: Qt.rgba(root.moduleColor.r, root.moduleColor.g, root.moduleColor.b, 0.42)
+                color: Qt.rgba(root.moduleColor.r, root.moduleColor.g, root.moduleColor.b, root.materialStyle.x > 0.5 ? 0.42 : 1)
                 border.width: 0.7
                 border.color: Qt.rgba(panel.voiceAccent.r, panel.voiceAccent.g, panel.voiceAccent.b, 0.15)
                 visible: root.showGlass && !glass.visible

@@ -24,7 +24,12 @@ layout(std140, binding = 0) uniform buf {
     vec4 wordLightMist;
     vec2 glowBreath;
     float heartPulse;
+    float lightClock;
+    vec4 lyricCutout;
+    float glassAmount;
+    vec2 materialStyle;
 };
+layout(binding = 1) uniform sampler2D backdrop;
 
 float roundedBox(vec2 p, vec2 center, vec2 size, float radius) {
     vec2 q = abs(p - center) - size * 0.5 + radius;
@@ -62,20 +67,37 @@ float perimeterTravel(vec2 p) {
     return d / max(1.0, corner.y + r * 1.5707963 + corner.x);
 }
 
-vec3 sideLight(vec2 p, bool rightSide, float sensitivity) {
-    vec3 audio = clamp((rightSide ? rightAudio.xyz : leftAudio.xyz) * sensitivity, 0.0, 1.0);
+// Three soft frequency clouds along each side replace the absorbed capsules.
+vec3 sideLight(vec2 p, bool rightSide) {
+    vec3 audio = rightSide ? rightAudio.xyz : leftAudio.xyz;
     float sideX = dockRect.x + (rightSide ? dockRect.z : 0.0);
-    float x = abs(p.x - sideX);
-    float y = (p.y - dockRect.y) / max(1.0, dockRect.w);
-    // Three overlapping frequency clouds, never discrete spectrum bars.
-    vec3 bands = vec3(exp(-pow((y - 0.72) / 0.25, 2.0)),
-        exp(-pow((y - 0.43) / 0.3, 2.0)), exp(-pow((y - 0.2) / 0.22, 2.0)));
-    bands *= vec3(0.035) + audio * 0.95;
-    float energy = max(audio.x, max(audio.y, audio.z));
-    float reach = 18.0 + 30.0 * energy;
-    float spread = exp(-pow(x / reach, 1.35));
-    return (lightPrimary.rgb * bands.x + lightSecondary.rgb * bands.y
-        + lightTertiary.rgb * bands.z) * spread;
+    float x = abs(p.x-sideX);
+    float y = (p.y-dockRect.y)/max(1.0,dockRect.w);
+    vec3 bands = vec3(exp(-pow((y-0.72)/0.25,2.0)),
+        exp(-pow((y-0.43)/0.30,2.0)),exp(-pow((y-0.20)/0.22,2.0))) * audio;
+    float energy = max(audio.x,max(audio.y,audio.z));
+    float spread = exp(-pow(x/(18.0+30.0*energy),1.35));
+    return (lightPrimary.rgb*bands.x+lightSecondary.rgb*bands.y
+        +lightTertiary.rgb*bands.z)*spread;
+}
+
+vec3 bottomLight(vec2 p) {
+    float x = clamp((p.x-dockRect.x)/max(1.0,dockRect.z),0.0,1.0);
+    vec3 audio = mix(leftAudio.xyz,rightAudio.xyz,x);
+    float energy = max(audio.x,max(audio.y,audio.z));
+    float below = p.y-dockRect.y-dockRect.w;
+    float spread = exp(-pow(abs(below)/(below>0.0 ? 13.0 : 24.0+14.0*energy),1.5));
+    vec3 lobes = vec3(exp(-pow((x-0.2-0.045*sin(lightClock*0.7))/0.25,2.0)),
+        exp(-pow((x-0.5)/0.3,2.0)),exp(-pow((x-0.8-0.045*cos(lightClock*0.8))/0.25,2.0)));
+    lobes *= audio;
+    return (lightPrimary.rgb*lobes.x + lightSecondary.rgb*lobes.y
+        + lightTertiary.rgb*lobes.z)*spread*1.5;
+}
+
+vec3 spectralHue(vec2 p) {
+    float t = (p.x+p.y*0.6)*0.017-lightClock*0.65;
+    vec3 w = 0.5+0.5*cos(t+vec3(0.0,2.094,4.188));
+    return (lightPrimary.rgb*w.x+lightSecondary.rgb*w.y+lightTertiary.rgb*w.z)/1.5;
 }
 
 // Elliptical, feathered pools follow the lyric marker under the glass.
@@ -110,22 +132,68 @@ void main() {
     vec2 shadowOffset = skinStyle.w > 0.5 ? vec2(shadowShift, 0.0) : vec2(0.0, shadowShift);
     float shade = 1.0 - smoothstep(-aa, aa, body(p - shadowOffset));
     vec4 result = face * cover + shadowColor * shade * (1.0 - cover);
+    // The main dock is a translucent lens, rather than an opaque dark pill.
+    // Capture only app windows behind it; gaps reveal the real desktop directly.
+    vec2 halfDock = dockRect.zw*0.5;
+    float mainD = roundedBox(p,dockRect.xy+halfDock,dockRect.zw,params.y);
+    if (glassAmount > 0.001 && cover > 0.0) {
+        vec2 n = normalize(vec2(body(p+vec2(1.0,0.0))-body(p-vec2(1.0,0.0)),
+            body(p+vec2(0.0,1.0))-body(p-vec2(0.0,1.0)))+vec2(0.00001));
+        float bevel = exp(-max(0.0,depth)/9.0);
+        vec2 uv = clamp((p-n*bevel*13.0*materialStyle.y)/resolution,0.0,1.0);
+        vec2 fringe = n*bevel*1.1*materialStyle.y/resolution;
+        vec4 scene = texture(backdrop,uv);
+        scene.r = texture(backdrop,clamp(uv+fringe,0.0,1.0)).r;
+        scene.b = texture(backdrop,clamp(uv-fringe,0.0,1.0)).b;
+        float mainMask = 1.0-smoothstep(-1.0,1.0,mainD);
+        float tintAlpha = mix(min(1.0,materialStyle.x+0.29),materialStyle.x,mainMask);
+        float transmission = 0.78;
+        float a = tintAlpha+scene.a*transmission*(1.0-tintAlpha);
+        vec3 tint = mix(fillColor.rgb,lightPrimary.rgb,0.065);
+        vec3 rgb = tint*tintAlpha+scene.rgb*transmission*(1.0-tintAlpha);
+        float rim = exp(-abs(distance+0.8)/1.1);
+        float inner = exp(-abs(distance+5.0)/2.0);
+        float spec = pow(max(0.0,dot(n,normalize(vec2(-0.5,-1.0)))),3.0);
+        float highlight = rim*(0.13+spec*0.44)+inner*0.075;
+        rgb += mix(vec3(1.0),lightPrimary.rgb,0.18)*highlight;
+        a = max(a,highlight);
+        result = mix(result,vec4(min(rgb,vec3(a)),a),glassAmount*cover);
+    }
+    // Compact audio light stays INSIDE the side capsules; no main-dock halo.
+    if (lightData.x < 0.999 && skinStyle.z > 0.5) {
+        vec2 wingSize = vec2(wingData.w, params.x);
+        float wingD = min(roundedBox(p,wingData.xy,wingSize,params.x*0.5),
+            roundedBox(p,wingData.zy,wingSize,params.x*0.5));
+        float wingCover = (1.0-smoothstep(-aa,aa,wingD))*smoothstep(-1.0,1.0,mainD);
+        vec3 audio = p.x < dockRect.x+dockRect.z*0.5 ? leftAudio.xyz : rightAudio.xyz;
+        float energy = max(audio.x,max(audio.y,audio.z));
+        float inward = exp(-max(0.0,-wingD)/7.0);
+        float intensity = (inward*0.54+0.10)*wingCover
+            *energy*lightData.w*(1.0-lightData.x)*glassAmount;
+        float a = clamp(intensity,0.0,0.85);
+        vec3 hue = spectralHue(p);
+        result.rgb = min(vec3(result.a),hue*a*result.a+result.rgb*(1.0-a));
+    }
     if (lightData.x > 0.001) {
         float mainDistance = roundedBox(p, dockRect.xy + dockRect.zw * 0.5, dockRect.zw, params.y);
         float mainCover = 1.0 - smoothstep(-aa, aa, mainDistance);
-        vec3 light = (sideLight(p, false, 1.0) + sideLight(p, true, 1.0)) * lightData.w + lyricLight(p);
+        float cutoutD = roundedBox(p,lyricCutout.xy+lyricCutout.zw*0.5,
+            lyricCutout.zw,26.0);
+        float opaqueZone = smoothstep(-1.0,2.0,cutoutD);
+        vec3 light = (sideLight(p,false)+sideLight(p,true)+bottomLight(p))
+            *lightData.w*opaqueZone + lyricLight(p);
         // Stronger under-glass light; only a tight, faint spill outside.
         float outer = exp(-pow(max(0.0, mainDistance) / 12.5, 1.5));
         float lightMask = lightData.x * 0.95 * mainCover;
         float lightAlpha = clamp(max(light.r, max(light.g, light.b)) * lightMask, 0.0, 0.85);
-        result.rgb = mix(result.rgb, light, lightMask * 0.85);
         result.a = max(result.a, lightAlpha);
+        result.rgb = min(vec3(result.a), result.rgb + light * lightMask * 0.72);
         float arc = perimeterTravel(p);
         float traced = lightData.y < 0.001 ? 0.0 : 1.0 - smoothstep(lightData.y - 0.012, lightData.y, arc);
         if (lightData.y > 0.999) traced = 1.0;
         // Composite an actual translucent emitter outside the silhouette.
         // Normalizing the hue avoids multiplying dim light by its alpha twice.
-        vec3 outsideLight = (sideLight(p, false, 1.2) + sideLight(p, true, 1.2)) * lightData.w;
+        vec3 outsideLight = (sideLight(p,false)+sideLight(p,true)+bottomLight(p))*lightData.w;
         float brightness = max(outsideLight.r, max(outsideLight.g, outsideLight.b));
         float glowAlpha = clamp(brightness * outer * 0.86 * lightData.x
             * (1.0 - mainCover) * traced, 0.0, 0.72);
@@ -136,10 +204,12 @@ void main() {
         float head = exp(-pow((arc - lightData.y) / 0.035, 2.0))
             * (1.0 - smoothstep(0.8, 1.0, lightData.y));
         float halo = exp(-abs(mainDistance) / 3.0) * traced * 0.11;
-        float strength = clamp((line * (0.65 + head * 0.35) + halo) * lightData.x * lightData.w, 0.0, 1.0);
-        result.rgb = mix(result.rgb, lightPrimary.rgb, strength);
+        float lowerEdge = smoothstep(0.65,1.0,(p.y-dockRect.y)/max(1.0,dockRect.w));
+        float energy = max(max(leftAudio.x,leftAudio.y),max(rightAudio.x,rightAudio.y));
+        float strength = clamp((line * (0.3 + head * 0.2) + halo) * lightData.x * lightData.w * lowerEdge * energy, 0.0, 1.0);
+        result.rgb = mix(result.rgb, spectralHue(p), strength);
         result.a = max(result.a, strength);
     }
     // All compositing above is premultiplied for the translucent outer spill.
-    fragColor = result * qt_Opacity;
+    fragColor = vec4(min(result.rgb,vec3(result.a)),result.a) * qt_Opacity;
 }

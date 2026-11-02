@@ -27,5 +27,5 @@ ShellRoot {
   }
   Plugin.SettingsPanel {id:panel;anchors.fill:parent;pst:model;phone:phone;theme:({surface:Qt.color("#172a28"),ink:Qt.color("#d5ebe5"),accentCyan:Qt.color("#9ed8c8")})}
  }
- Timer {interval:50;running:true;repeat:true;onTriggered:{demo.elapsed+=.05;if(demo.elapsed>1 && demo.elapsed<1.1)demoService.settingsPanelOpen=true;if(demo.elapsed>4 && demo.elapsed<5)panel.query="питом";if(demo.elapsed>7)demoService.settingsPanelOpen=false;if(demo.elapsed>11)Qt.quit();if(!demo.saving){demo.saving=true;win.contentItem.grabToImage(r=>{r.saveToFile(demo.output+"/"+String(demo.frame++).padStart(5,"0")+".png");demo.saving=false})}}}
+ Timer {interval:50;running:true;repeat:true;onTriggered:{demo.elapsed+=.05;if(demo.elapsed>1 && demo.elapsed<1.1)demoService.settingsPanelOpen=true;if(demo.elapsed>4 && demo.elapsed<5)panel.query="стекло дока";if(demo.elapsed>7)demoService.settingsPanelOpen=false;if(demo.elapsed>11)Qt.quit();if(!demo.saving){demo.saving=true;win.contentItem.grabToImage(r=>{r.saveToFile(demo.output+"/"+String(demo.frame++).padStart(5,"0")+".png");demo.saving=false})}}}
 }

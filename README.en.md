@@ -1,12 +1,12 @@
 # SekaiPOP Dock Equalizer & Living Wallpapers
 
-> **3.0.0-rc.1 — native extension preview.** Requires a proposed shell API, currently absent from official SekaiPOP. [Integration status and patch](docs/NATIVE-INTEGRATION.md). install.py is now a no-op notice. The last adapter-based stable release is [2.22.0](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases/tag/v2.22.0).
+> **3.0.0-rc.2 — native extension preview.** Requires a proposed shell API, currently absent from official SekaiPOP. [Integration status and patch](docs/NATIVE-INTEGRATION.md). install.py is now a no-op notice. The last adapter-based stable release is [2.23.0](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases/tag/v2.23.0).
 
 [![Checks](https://github.com/Aferon-08/sekaipop-dock-equalizer/actions/workflows/checks.yml/badge.svg)](https://github.com/Aferon-08/sekaipop-dock-equalizer/actions/workflows/checks.yml) [![Version](https://img.shields.io/github/v/release/Aferon-08/sekaipop-dock-equalizer)](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 [Русский](README.md) · [Installation](docs/INSTALL.md) · [Releases](https://github.com/Aferon-08/sekaipop-dock-equalizer/releases)
 
-An independent extension for **[SekaiPOP](https://github.com/Blapples/SekaiPop)** on Hyprland: a liquid music dock, word-timed lyrics and procedural glass wallpapers with a tiny firefly companion. **Version 2.22.0 · GPL-3.0.** The settings UI and detailed documentation are currently primarily in Russian.
+An independent extension for **[SekaiPOP](https://github.com/Blapples/SekaiPop)** on Hyprland: a liquid music dock, word-timed lyrics and procedural glass wallpapers with a tiny firefly companion. **Version 3.0.0-rc.2 · GPL-3.0.** The settings UI and detailed documentation are currently primarily in Russian.
 
 ![Music dock demo](docs/media/dock.gif)
 
@@ -20,9 +20,11 @@ These are recordings of the real QML components in a controlled demo scene, usin
 
 The multi-voice demo uses explicitly tagged sample data; it demonstrates the UI, not automatic voice-recognition accuracy. [Video](docs/media/voices.mp4).
 
+The **Dock glass** settings group provides a master switch and controls for opacity, refraction, lyric frost/darkening and reactive-light brightness. Disabling it releases window-capture sources and retains your tuned values.
+
 ## 2.22.0 — Liquid settings panel
 
-**55 settings**, search, smooth scrolling and per-setting / confirmed full reset. The phone morphs through an irregular glass droplet into a taller settings panel, then returns on Back or Escape. [Settings catalogue (RU)](docs/SETTINGS.md).
+**61 settings**, search, smooth scrolling and per-setting / confirmed full reset. The phone morphs through an irregular glass droplet into a taller settings panel, then returns on Back or Escape. [Settings catalogue (RU)](docs/SETTINGS.md).
 
 ![Liquid settings panel](docs/media/settings.gif)
 

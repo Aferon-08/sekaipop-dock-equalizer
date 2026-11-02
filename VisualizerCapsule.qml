@@ -13,6 +13,12 @@ Item {
     property real level: 0
     readonly property real sensitivity: Math.max(0.1, Math.min(5, host.settings.sensitivity))
     readonly property string style: host.settings.style
+    property var ribbonAmplitudes: []
+    property real ribbonClock: 0
+    FrameAnimation {
+        running: root.visible && root.opacity > 0.001 && root.style !== "bars" && root.level > 0.001
+        onTriggered: root.ribbonClock += Math.min(frameTime, 0.05)
+    }
 
     // Retain only the last visual frame, without keeping an audio stream open.
     // New playback cancels the fade; pause smoothly takes that frame to zero.
@@ -68,6 +74,7 @@ Item {
 
         Canvas {
             id: canvas
+            visible: root.style === "bars"
             anchors.fill: parent
             anchors.margins: root.palette.border + 5
             renderStrategy: Canvas.Threaded
@@ -90,7 +97,16 @@ Item {
                     next.push(value)
                 }
                 amplitudes = next
-                requestPaint()
+                const smooth = []
+                for (let i=0; i<16; ++i) {
+                    // Lift quiet audio without turning silence into an idle wave.
+                    const raw = Math.max(next[i*2], next[i*2+1])
+                    const lifted = Math.pow(raw, 0.62)
+                    const previous = root.ribbonAmplitudes[i] || 0
+                    smooth.push(previous + (lifted-previous) * (lifted>previous ? 0.68 : 0.38))
+                }
+                root.ribbonAmplitudes = root.level < 0.001 ? [] : smooth
+                if (visible) requestPaint()
             }
 
             onWidthChanged: requestPaint()
@@ -141,6 +157,16 @@ Item {
                     ctx.fill()
                 }
             }
+        }
+        SpectrumRibbon {
+            anchors.fill: parent
+            anchors.margins: root.palette.border + 4
+            visible: root.style !== "bars"
+            amplitudes: root.ribbonAmplitudes
+            palette: root.palette
+            secondary: root.host.theme.accentMint || root.palette.ink
+            clock: root.ribbonClock
+            mirrored: root.channel === 0 && root.host.settings.mirrorLeft !== false
         }
     }
 

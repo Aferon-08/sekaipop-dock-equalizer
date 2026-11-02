@@ -531,10 +531,19 @@ index 32b9a52..88c7188 100644
      IpcHandler {
          target: "plugins"
 diff --git a/sekaipop/services/PluginState.qml b/sekaipop/services/PluginState.qml
-index dc25880..bb4fb67 100644
+index dc25880..e28886e 100644
 --- a/sekaipop/services/PluginState.qml
 +++ b/sekaipop/services/PluginState.qml
-@@ -274,6 +274,9 @@ QtObject {
+@@ -97,6 +97,7 @@ QtObject {
+     readonly property var wanted: {
+         const out = []
+-        for (const kind of ["widget", "bar", "popup"]) {
++        // Native extensions participate in the same service lifecycle as widgets.
++        for (const kind of ["widget", "bar", "popup"].concat(root.plugin.extensions || [])) {
+             if (Object.keys(root.claims).some(k => k.indexOf(kind + ":") === 0))
+                 out.push(kind)
+         }
+@@ -274,6 +275,9 @@ QtObject {
      // What Service.qml is handed: the part of `host` that is not about a surface (no theme,
      // monitor or size). Its `working` is true while any surface shows; `wanted` says which.
      readonly property QtObject serviceHost: QtObject {

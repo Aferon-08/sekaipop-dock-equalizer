@@ -1,7 +1,7 @@
 {
   "id": "dock-equalizer",
   "name": "Dock Equalizer",
-  "version": "3.0.0-rc.1",
+  "version": "3.0.0-rc.2",
   "api": 1,
   "description": "Музыкальный док с лирикой и процедурные обои Material + стекло.",
   "icon": "graphic_eq",
@@ -12,6 +12,12 @@
     "gap": 12,
     "sensitivity": 1.25,
     "style": "wave",
+    "dockGlass": true,
+    "glassOpacity": 0.28,
+    "glassRefraction": 1.0,
+    "glassBlur": 3.8,
+    "glassDarkening": 0.23,
+    "glassLight": 1.0,
     "collapseDelay": 600,
     "lyrics": true,
     "expandLyrics": true,
@@ -454,11 +460,58 @@
       "min": 0.2,
       "max": 2,
       "step": 0.1
+    },
+    "dockGlass": {
+      "label": "Стеклянное оформление дока",
+      "description": "Общий тумблер для корпуса, капсул, областей лирики и музыкальной подсветки. При выключении — непрозрачное оформление без захвата окон. Настройки ниже сохраняются; обои и окно настроек настраиваются отдельно.",
+      "group": "Стекло дока"
+    },
+    "glassOpacity": {
+      "label": "Непрозрачность корпуса",
+      "min": 0.1,
+      "max": 1,
+      "step": 0.02,
+      "group": "Стекло дока",
+      "enabledBy": "dockGlass"
+    },
+    "glassRefraction": {
+      "label": "Сила преломления",
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "group": "Стекло дока",
+      "enabledBy": "dockGlass"
+    },
+    "glassBlur": {
+      "label": "Матовость областей лирики",
+      "min": 0,
+      "max": 8,
+      "step": 0.2,
+      "unit": "px",
+      "group": "Стекло дока",
+      "enabledBy": "dockGlass"
+    },
+    "glassDarkening": {
+      "label": "Затемнение областей лирики",
+      "min": 0,
+      "max": 0.8,
+      "step": 0.02,
+      "group": "Стекло дока",
+      "enabledBy": "dockGlass"
+    },
+    "glassLight": {
+      "label": "Яркость музыкальной подсветки",
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "group": "Стекло дока",
+      "enabledBy": "dockGlass"
     }
   },
   "groups": [
     "Расположение",
     "Звук",
+    "Стекло дока",
     "Анимация",
     "Лирика",
     "Процедурные обои",

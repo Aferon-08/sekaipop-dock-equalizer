@@ -13,6 +13,8 @@ Rectangle {
  readonly property var original:pst.plugin.settings[settingKey]
  readonly property bool numeric:typeof original==="number"
  readonly property bool boolean:typeof original==="boolean"
+ enabled:!info.enabledBy || pst.settings[info.enabledBy]!==false
+ opacity:enabled?1:0.45
  height:visible?body.implicitHeight+26:0
  radius:16;color:Qt.rgba(.015,.035,.035,.35);border.color:Qt.rgba(accent.r,accent.g,accent.b,.12)
  ColumnLayout {id:body;x:16;y:13;width:parent.width-32;spacing:6
